@@ -1,0 +1,176 @@
+# CLAUDE.md — ClinicaMVP
+
+## Qué es este proyecto
+
+Sistema de historia clínica electrónica (HCE) para consultorios de ginecología y medicina reproductiva. Web app full-stack. MVP enfocado en el flujo de consulta médica.
+
+## Stack
+
+- **Framework:** Next.js 16.2 (App Router, Server Components, Server Actions)
+- **Lenguaje:** TypeScript (strict mode)
+- **ORM:** Drizzle ORM con PostgreSQL 16
+- **Estilos:** TailwindCSS v4
+- **Componentes UI:** shadcn/ui
+- **Validación:** Zod (schemas compartidos front/back)
+- **Auth:** JWT propio (argon2id para hash, access token 15min + refresh token con rotación)
+- **Storage:** Cloudflare R2 (S3-compatible)
+- **Testing:** Vitest + Playwright
+- **Deploy:** Docker Compose en VPS
+
+## Estructura del proyecto
+
+```
+/
+├── CLAUDE.md                    # Este archivo
+├── docs/
+│   └── PRODUCT.md               # Documento de producto (contexto de negocio)
+├── src/
+│   ├── app/                     # Next.js App Router (páginas y layouts)
+│   │   ├── (auth)/              # Grupo: login, registro
+│   │   ├── (dashboard)/         # Grupo: app autenticada
+│   │   │   ├── patients/
+│   │   │   ├── appointments/
+│   │   │   ├── clinical-notes/
+│   │   │   └── settings/
+│   │   ├── api/                 # Route Handlers (solo para uploads y auth tokens)
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   ├── components/              # Componentes React reutilizables
+│   │   ├── ui/                  # shadcn/ui (no modificar)
+│   │   └── ...                  # Componentes del dominio
+│   ├── lib/                     # Lógica compartida
+│   │   ├── db/
+│   │   │   ├── schema.ts        # Drizzle schema (todas las tablas)
+│   │   │   ├── index.ts         # Conexión a DB
+│   │   │   └── migrations/      # SQL migrations generadas por drizzle-kit
+│   │   ├── auth/                # Lógica de autenticación
+│   │   ├── validators/          # Schemas Zod
+│   │   └── utils/
+│   ├── actions/                 # Server Actions (mutaciones)
+│   └── queries/                 # Data access (queries de lectura)
+├── drizzle.config.ts
+├── docker-compose.yml
+├── Dockerfile
+└── .env.example
+```
+
+## Convenciones de código
+
+### General
+- TypeScript strict. No `any` excepto en tipos de terceros inevitables.
+- Nombrar archivos en kebab-case: `patient-form.tsx`, `create-appointment.ts`.
+- Nombrar componentes en PascalCase: `PatientForm`, `AppointmentCard`.
+- Nombrar funciones/variables en camelCase.
+- No comentarios obvios. Comentar solo decisiones no evidentes.
+- Preferir funciones pequeñas y composables sobre funciones largas.
+
+### Base de datos / Drizzle
+- Todo el schema en `src/lib/db/schema.ts`.
+- Toda tabla tiene `clinic_id` (multitenancy). Todo query DEBE filtrar por `clinic_id`. Sin excepciones.
+- Usar UUID v7 (ordenables por tiempo) para primary keys. Helper: `generateId()` en utils.
+- Campos de especialidad en JSONB (`specialty_data`). No crear columnas específicas de ginecología en el schema relacional.
+- Soft delete con `is_active: boolean` en patients. Hard delete solo en dev.
+- Timestamps: `created_at` y `updated_at` con `DEFAULT now()`.
+- Las migraciones se generan con `drizzle-kit generate` y se aplican con `drizzle-kit migrate`. Nunca editar SQL generado a mano.
+
+### Server Actions (mutaciones)
+- Ubicar en `src/actions/`.
+- Siempre validar input con Zod ANTES de tocar la DB.
+- Siempre verificar sesión y permisos antes de ejecutar.
+- Siempre verificar que el recurso pertenece al `clinic_id` del usuario.
+- Retornar `{ success: boolean, data?: T, error?: string }`. No lanzar excepciones al cliente.
+- Registrar en audit log toda acción sobre datos de pacientes.
+
+### Queries (lectura)
+- Ubicar en `src/queries/`.
+- Funciones async que reciben `clinic_id` como primer parámetro.
+- Nunca exponer queries directamente al cliente. Siempre pasar por Server Component o API route.
+
+### Componentes
+- Server Components por defecto. Solo usar `"use client"` cuando se necesite interactividad (formularios, modales, estado local).
+- No mezclar lógica de data fetching en Client Components. Los datos se pasan como props desde Server Components.
+- Formularios: usar `useActionState` + Server Actions. No `fetch` manual a API routes para mutaciones.
+
+### Autenticación y permisos
+- Tres roles: `admin`, `doctor`, `receptionist`.
+- Verificar permisos en el SERVER (Server Actions / Route Handlers), nunca solo en el cliente.
+- El recepcionista NO puede ver `internal_notes` en notas clínicas.
+- El recepcionista NO puede editar datos clínicos (historia clínica, notas de evolución).
+- El recepcionista SÍ puede: gestionar citas, registrar pacientes, subir adjuntos.
+- Middleware de Next.js solo para redirección (no como capa de seguridad principal, por historial de CVEs).
+
+### Auditoría
+- Tabla `audit_log` es append-only. Nunca UPDATE ni DELETE sobre ella.
+- Registrar: CREATE, READ (de ficha de paciente), UPDATE, DELETE, LOGIN, LOGOUT, EXPORT.
+- Incluir: `user_id`, `action`, `resource_type`, `resource_id`, `clinic_id`, `created_at`.
+- Helper: `auditLog(userId, action, resourceType, resourceId, details?)`.
+
+### Seguridad
+- HTTPS obligatorio en producción.
+- No confiar en middleware para auth crítica. Verificar en cada Server Action y Route Handler.
+- Archivos (adjuntos) se sirven por Route Handler autenticado. Nunca URLs directas a R2/S3.
+- Nombres de archivo en storage: UUID, nunca el nombre original.
+- Rate limiting en endpoint de login: máximo 5 intentos por IP en 15 minutos.
+- Sanitizar toda entrada. Usar Zod para validación, no validación manual.
+- Variables sensibles solo en `.env`. Nunca hardcodear secrets.
+- Notas clínicas firmadas (`is_signed: true`) son inmutables. Para corregir, crear addenda.
+- CSP, X-Frame-Options, HSTS configurados en `next.config.ts`.
+
+### Testing
+- Tests de integración para flujos críticos: login, crear paciente, crear nota, verificar permisos.
+- Tests e2e con Playwright: flujo completo de consulta (agendar → atender → documentar).
+- No exigir 100% coverage. Cubrir lo que importa: auth, permisos, datos de pacientes.
+
+## Modelo de datos resumido
+
+```
+Clinic    1──N  User
+Clinic    1──N  Patient
+Patient   1──1  MedicalHistory     (antecedentes, specialty_data JSONB)
+Patient   1──N  Appointment
+Patient   1──N  ClinicalNote       (formato SOAP, specialty_data JSONB)
+Patient   1──N  Attachment
+ClinicalNote 1──N Attachment
+User      1──N  ClinicalNote       (author)
+User      1──N  AuditLog
+```
+
+Campos de especialidad (ginecología) van en `specialty_data` (JSONB), no en columnas del schema relacional. Ver `docs/PRODUCT.md` Sección 8 para el schema completo.
+
+## Qué NO construir
+
+- Facturación o cobros.
+- Prescripción electrónica con catálogo de medicamentos.
+- Form builder genérico / formularios dinámicos.
+- Visor DICOM ni visor de imágenes médico.
+- Telemedicina / videollamada.
+- Portal del paciente.
+- Integración con laboratorios.
+- Multi-idioma (solo español).
+- App nativa (web responsive es suficiente).
+- Agenda multi-recurso / multi-sala (1 médico = 1 agenda).
+- Notificaciones automáticas (SMS/WhatsApp).
+
+Si alguno de estos aparece como requisito, rechazar y referir a `docs/PRODUCT.md` Sección 4.
+
+## Comandos útiles
+
+```bash
+# Dev
+pnpm dev                       # Next.js dev server con Turbopack
+pnpm db:generate               # Generar migración con Drizzle Kit
+pnpm db:migrate                # Aplicar migraciones
+pnpm db:studio                 # Drizzle Studio (browser de DB)
+
+# Test
+pnpm test                      # Vitest
+pnpm test:e2e                  # Playwright
+
+# Build
+pnpm build                     # Build de producción
+pnpm start                     # Iniciar en modo producción
+
+# Docker
+docker compose up -d           # Levantar DB + app
+docker compose down            # Bajar todo
+```
