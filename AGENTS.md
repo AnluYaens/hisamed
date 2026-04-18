@@ -8,7 +8,27 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 The app is designed to serve clinics in any timezone. The dev machine, the
 production server, and the clinic's users may all live in different
-timezones. To avoid off-by-one bugs:
+timezones.
+
+## Two kinds of date/time, two sets of rules
+
+Be precise about which kind you are dealing with — the rules below apply
+**only to calendar dates**, not to absolute timestamps.
+
+| Kind                    | Examples in this codebase                  | Postgres column   | TZ-sensitive on write? |
+|-------------------------|---------------------------------------------|-------------------|------------------------|
+| **Calendar date** (no time) | `appointments.date`, `patients.dateOfBirth` | `date`            | YES — "what day it is" depends on TZ |
+| **Absolute timestamp**  | `cancelledAt`, `updatedAt`, `createdAt`     | `timestamp`       | NO — an instant is the same everywhere |
+
+For absolute timestamps, just use `new Date()` and pass it straight to
+the column. JS Date objects are absolute instants (ms since epoch); they
+do not carry a timezone. Drizzle / pg serialize them to UTC and Postgres
+stores a single canonical value. Render in any TZ at read time via
+`Intl.DateTimeFormat({ timeZone: clinic.timezone })`. Do NOT manually
+"convert to clinic TZ before insert" — that produces a different instant
+and corrupts the audit trail.
+
+## Rules for calendar dates
 
 1. **Never use `Date#toISOString().split('T')[0]`** to derive a `YYYY-MM-DD`
    string. `toISOString` always returns UTC, so on a UTC server at e.g.
