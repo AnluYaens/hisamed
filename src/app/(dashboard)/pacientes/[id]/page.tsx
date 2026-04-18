@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, ToggleLeft, ToggleRight } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { getSession } from '@/lib/auth/session';
 import { getPatientById } from '@/queries/patients';
+import { getMedicalHistory } from '@/queries/medical-history';
 import { PatientTabs, type PatientTabId } from '@/components/patients/patient-tabs';
 import { ToggleActiveButton } from '@/components/patients/toggle-active-button';
+import { MedicalHistoryForm } from '@/components/patients/medical-history-form';
 import { safeAuditLog, getClientIpFromHeaders } from '@/lib/audit';
 
 const CLINICAL_ROLES = new Set(['admin', 'doctor']);
@@ -38,6 +40,13 @@ export default async function PatientDetailPage({ params }: PageProps) {
   const allowedTabs: PatientTabId[] = canViewClinical
     ? ['datos', 'citas', 'historia', 'notas', 'adjuntos']
     : ['datos', 'citas', 'adjuntos'];
+
+  // Only fetch medical history for roles that can access it. The query itself
+  // re-enforces the role gate, but we still branch here to avoid throwing on
+  // legitimate non-clinical viewers.
+  const medicalHistory = canViewClinical
+    ? await getMedicalHistory(patient.id)
+    : null;
 
   const dob = patient.dateOfBirth as string;
   const [year, month, day] = dob.split('-');
@@ -88,8 +97,19 @@ export default async function PatientDetailPage({ params }: PageProps) {
       <PatientTabs
         patient={patient}
         allowedTabs={allowedTabs}
-        historiaSlot={canViewClinical ? <ClinicalPlaceholder title="Historia clínica" description="Los antecedentes personales, familiares y ginecológicos del paciente aparecerán aquí." /> : undefined}
-        notasSlot={canViewClinical ? <ClinicalPlaceholder title="Notas de evolución" description="Las notas SOAP del paciente aparecerán aquí una vez que se implemente el módulo de notas clínicas." /> : undefined}
+        historiaSlot={
+          canViewClinical ? (
+            <MedicalHistoryForm patientId={patient.id} history={medicalHistory} />
+          ) : undefined
+        }
+        notasSlot={
+          canViewClinical ? (
+            <ClinicalPlaceholder
+              title="Notas de evolución"
+              description="Las notas SOAP del paciente aparecerán aquí una vez que se implemente el módulo de notas clínicas."
+            />
+          ) : undefined
+        }
       />
     </div>
   );
