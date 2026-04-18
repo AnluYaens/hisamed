@@ -18,8 +18,12 @@ interface PageProps {
   }>;
 }
 
-function parseDate(str: string | undefined): Date {
-  return parseDateStr(str) ?? new Date();
+// Parse a YYYY-MM-DD string, falling back to a clinic-tz "today" string if
+// parsing fails. We deliberately do NOT fall back to `new Date()` because
+// that would use the server's local timezone, violating our rule of always
+// deriving "today" from the clinic's timezone (see lib/dates.ts header).
+function parseDate(str: string | undefined, fallbackTodayStr: string): Date {
+  return parseDateStr(str) ?? parseDateStr(fallbackTodayStr) ?? new Date();
 }
 
 function formatWeekRange(weekStart: Date): string {
@@ -49,10 +53,11 @@ export default async function AgendaPage({ searchParams }: PageProps) {
   const { timezone: clinicTimezone, weekStartsOn } = await getClinicSettings(session.clinicId);
   const todayStr = todayInTz(clinicTimezone);
 
-  // When the URL has no date, fall back to "today" in the clinic's timezone
-  // (not the server's). Otherwise dates near midnight could end up on the
-  // wrong day depending on where the server is hosted.
-  const rawDate = parseDate(params.date ?? todayStr);
+  // When the URL has no date — or contains an invalid one — fall back to
+  // "today" in the clinic's timezone (not the server's). Otherwise dates
+  // near midnight could end up on the wrong day depending on where the
+  // server is hosted.
+  const rawDate = parseDate(params.date, todayStr);
   const activeDate = view === 'week' ? getWeekStart(rawDate, weekStartsOn) : rawDate;
   const activeDateStr = toDateStr(activeDate);
 

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Calendar, Clock, User } from 'lucide-react';
 import { StatusBadge } from '@/components/appointments/status-badge';
 import type { AppointmentWithDetails } from '@/queries/appointments';
+import type { AppointmentStatus } from '@/lib/validators/appointment';
 
 interface PatientAppointmentsProps {
   appointments: AppointmentWithDetails[];
@@ -9,6 +10,12 @@ interface PatientAppointmentsProps {
   /** YYYY-MM-DD of "today" in the clinic's timezone. */
   todayStr: string;
 }
+
+// Terminal statuses: the appointment will not happen (or already happened).
+// These always belong to "Historial" regardless of whether the calendar
+// date is past, today, or future. Without `completed` here, an appointment
+// finished earlier today would still show up under "Próximas".
+const FINAL_STATUSES = new Set<AppointmentStatus>(['completed', 'cancelled', 'no_show']);
 
 function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-');
@@ -24,9 +31,8 @@ function formatTime(time: string): string {
 }
 
 export function PatientAppointments({ appointments, patientId, todayStr }: PatientAppointmentsProps) {
-  const isUpcoming = (dateStr: string) => dateStr >= todayStr;
-  const upcoming = appointments.filter((a) => a.date >= todayStr && a.status !== 'cancelled' && a.status !== 'no_show');
-  const past = appointments.filter((a) => a.date < todayStr || a.status === 'cancelled' || a.status === 'no_show');
+  const upcoming = appointments.filter((a) => a.date >= todayStr && !FINAL_STATUSES.has(a.status));
+  const past = appointments.filter((a) => a.date < todayStr || FINAL_STATUSES.has(a.status));
 
   if (appointments.length === 0) {
     return (
