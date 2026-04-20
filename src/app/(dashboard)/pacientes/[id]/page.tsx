@@ -5,11 +5,13 @@ import { getSession } from '@/lib/auth/session';
 import { getPatientById } from '@/queries/patients';
 import { getMedicalHistory } from '@/queries/medical-history';
 import { getAppointmentsByPatient } from '@/queries/appointments';
+import { getClinicalNotesByPatient } from '@/queries/clinical-notes';
 import { getClinicSettings } from '@/queries/clinic';
 import { PatientTabs, type PatientTabId } from '@/components/patients/patient-tabs';
 import { ToggleActiveButton } from '@/components/patients/toggle-active-button';
 import { MedicalHistoryForm } from '@/components/patients/medical-history-form';
 import { PatientAppointments } from '@/components/appointments/patient-appointments';
+import { ClinicalNoteTimeline } from '@/components/clinical-notes/clinical-note-timeline';
 import { safeAuditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { todayInTz } from '@/lib/dates';
 
@@ -45,15 +47,19 @@ export default async function PatientDetailPage({ params }: PageProps) {
     ? ['datos', 'citas', 'historia', 'notas', 'adjuntos']
     : ['datos', 'citas', 'adjuntos'];
 
-  // Only fetch medical history for roles that can access it. The query itself
-  // re-enforces the role gate, but we still branch here to avoid throwing on
-  // legitimate non-clinical viewers.
-  const [medicalHistory, patientAppointments, clinicSettings] = await Promise.all([
+  // Only fetch medical history + notes for roles that can access them. Both
+  // queries re-enforce the role gate, but we still branch here to avoid
+  // throwing on legitimate non-clinical viewers.
+  const [medicalHistory, clinicalNotes, patientAppointments, clinicSettings] = await Promise.all([
     canViewClinical ? getMedicalHistory(patient.id) : Promise.resolve(null),
+    canViewClinical
+      ? getClinicalNotesByPatient(session.clinicId, patient.id)
+      : Promise.resolve([]),
     getAppointmentsByPatient(session.clinicId, patient.id),
     getClinicSettings(session.clinicId),
   ]);
   const todayStr = todayInTz(clinicSettings.timezone);
+  const canCreateNote = session.role === 'doctor';
 
   const dob = patient.dateOfBirth as string;
   const [year, month, day] = dob.split('-');
@@ -119,22 +125,14 @@ export default async function PatientDetailPage({ params }: PageProps) {
         }
         notasSlot={
           canViewClinical ? (
-            <ClinicalPlaceholder
-              title="Notas de evolución"
-              description="Las notas SOAP del paciente aparecerán aquí una vez que se implemente el módulo de notas clínicas."
+            <ClinicalNoteTimeline
+              notes={clinicalNotes}
+              patientId={patient.id}
+              canCreate={canCreateNote}
             />
           ) : undefined
         }
       />
-    </div>
-  );
-}
-
-function ClinicalPlaceholder({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-white py-16 text-center dark:border-zinc-700 dark:bg-zinc-900">
-      <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{title}</p>
-      <p className="mt-1 max-w-sm text-xs text-zinc-400 dark:text-zinc-500">{description}</p>
     </div>
   );
 }
