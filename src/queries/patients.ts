@@ -96,12 +96,16 @@ export async function getPatients(
 
 export type PatientDetail = Awaited<ReturnType<typeof getPatientById>>;
 
+// Returns the patient row only — never embed `medicalHistory` here. The
+// patient detail page is rendered for every role (incl. receptionist) and
+// passes `patient` into a client component, which serializes the whole
+// object into the RSC payload. Loading medical history through this query
+// would ship clinical data to roles that aren't allowed to see it. Use
+// `getMedicalHistory(patientId)` from queries/medical-history.ts instead —
+// it has its own role gate (admin/doctor only).
 export async function getPatientById(clinicId: string, patientId: string) {
   const row = await db.query.patients.findFirst({
     where: and(eq(patients.id, patientId), eq(patients.clinicId, clinicId)),
-    with: {
-      medicalHistory: true,
-    },
   });
 
   return row ?? null;
