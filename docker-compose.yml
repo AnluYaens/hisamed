@@ -1,21 +1,68 @@
 services:
+  app:
+    build:
+      context: .
+      target: production
+    image: ${APP_IMAGE:-clinica-mvp:latest}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-clinica}:${POSTGRES_PASSWORD:-clinica_dev}@db:5432/${POSTGRES_DB:-clinica_mvp}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   db:
     image: postgres:16-alpine
-    container_name: clinica_mvp_db
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: clinica
-      POSTGRES_PASSWORD: clinica_dev
-      POSTGRES_DB: clinica_mvp
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-clinica}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-clinica_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-clinica_mvp}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U clinica -d clinica_mvp"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\"",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+
+  migrate:
+    build:
+      context: .
+      target: build
+    profiles:
+      - tools
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-clinica}:${POSTGRES_PASSWORD:-clinica_dev}@db:5432/${POSTGRES_DB:-clinica_mvp}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: pnpm db:migrate
 
 volumes:
   postgres_data:

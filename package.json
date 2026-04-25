@@ -2,10 +2,13 @@
   "name": "clinica-mvp",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.33.2",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "lint": "node scripts/lint.js",
+    "type-check": "tsc --noEmit --pretty false",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
