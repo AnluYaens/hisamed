@@ -10,6 +10,7 @@ import {
   time,
   integer,
   smallint,
+  decimal,
   jsonb,
   uniqueIndex,
   index,
@@ -307,6 +308,50 @@ export const clinicalDocuments = pgTable(
   ],
 );
 
+// Vital signs are taken at the start of each consultation. They live in their
+// own table — not denormalized into clinical_notes — so the receptionist can
+// record them before the doctor opens the note (clinical_note_id NULL until
+// the doctor associates them) and so trends across visits can be charted
+// without parsing JSONB blobs. BMI is computed at write time when both
+// weight_kg and height_cm are present; readers should treat it as a derived
+// snapshot of the inputs at that moment, not as a separately editable field.
+export const vitalSigns = pgTable(
+  'vital_signs',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    clinicId: uuid('clinic_id')
+      .notNull()
+      .references(() => clinics.id),
+    patientId: uuid('patient_id')
+      .notNull()
+      .references(() => patients.id),
+    clinicalNoteId: uuid('clinical_note_id').references(() => clinicalNotes.id),
+    recordedBy: uuid('recorded_by')
+      .notNull()
+      .references(() => users.id),
+    recordedAt: timestamp('recorded_at').notNull().defaultNow(),
+    weightKg: decimal('weight_kg', { precision: 5, scale: 2 }),
+    heightCm: decimal('height_cm', { precision: 5, scale: 1 }),
+    bmi: decimal('bmi', { precision: 4, scale: 1 }),
+    systolicBp: integer('systolic_bp'),
+    diastolicBp: integer('diastolic_bp'),
+    heartRate: integer('heart_rate'),
+    respiratoryRate: integer('respiratory_rate'),
+    temperatureC: decimal('temperature_c', { precision: 4, scale: 1 }),
+    oxygenSaturation: integer('oxygen_saturation'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('vital_signs_clinic_patient_recorded_idx').on(
+      table.clinicId,
+      table.patientId,
+      table.recordedAt,
+    ),
+    index('vital_signs_clinical_note_idx').on(table.clinicalNoteId),
+  ],
+);
+
 // Append-only: no FK constraints so records survive user deletion
 export const auditLogs = pgTable('audit_logs', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -375,6 +420,17 @@ export const clinicalNotesRelations = relations(clinicalNotes, ({ one, many }) =
   }),
   author: one(users, { fields: [clinicalNotes.authorId], references: [users.id] }),
   attachments: many(attachments),
+  vitalSigns: many(vitalSigns),
+}));
+
+export const vitalSignsRelations = relations(vitalSigns, ({ one }) => ({
+  clinic: one(clinics, { fields: [vitalSigns.clinicId], references: [clinics.id] }),
+  patient: one(patients, { fields: [vitalSigns.patientId], references: [patients.id] }),
+  clinicalNote: one(clinicalNotes, {
+    fields: [vitalSigns.clinicalNoteId],
+    references: [clinicalNotes.id],
+  }),
+  recordedByUser: one(users, { fields: [vitalSigns.recordedBy], references: [users.id] }),
 }));
 
 export const clinicalDocumentsRelations = relations(clinicalDocuments, ({ one }) => ({
@@ -430,6 +486,9 @@ export type ClinicalDocumentType =
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+
+export type VitalSigns = typeof vitalSigns.$inferSelect;
+export type NewVitalSigns = typeof vitalSigns.$inferInsert;
 
 export type PatientPartner = typeof patientPartners.$inferSelect;
 export type NewPatientPartner = typeof patientPartners.$inferInsert;

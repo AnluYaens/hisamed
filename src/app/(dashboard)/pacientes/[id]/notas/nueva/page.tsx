@@ -6,6 +6,9 @@ import { getPatientById } from '@/queries/patients';
 import { getMedicalHistory } from '@/queries/medical-history';
 import { getClinicSettings } from '@/queries/clinic';
 import { ClinicalNoteForm } from '@/components/clinical-notes/clinical-note-form';
+import { VitalSignsForm } from '@/components/vital-signs/vital-signs-form';
+import { VitalSignsHistory } from '@/components/vital-signs/vital-signs-history';
+import { getVitalSignsByPatient } from '@/queries/vital-signs';
 import { todayInTz } from '@/lib/dates';
 
 interface PageProps {
@@ -31,8 +34,12 @@ export default async function NewClinicalNotePage({ params, searchParams }: Page
   ]);
   if (!patient) notFound();
 
-  const medicalHistory = await getMedicalHistory(patient.id);
+  const [medicalHistory, vitalSignsRecords] = await Promise.all([
+    getMedicalHistory(patient.id),
+    getVitalSignsByPatient(session.clinicId, patient.id),
+  ]);
   const allergies = medicalHistory?.allergies?.trim() || null;
+  const unassignedVitalSigns = vitalSignsRecords.filter((r) => r.clinicalNoteId === null);
 
   const todayStr = todayInTz(clinicSettings.timezone);
 
@@ -64,6 +71,32 @@ export default async function NewClinicalNotePage({ params, searchParams }: Page
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
           Nueva nota de evolución
         </h1>
+      </div>
+
+      {/* Vital signs go above the SOAP form because they're captured at the
+          start of the consultation. The note has no id yet — the doctor saves
+          them unassigned and associates after creating the note. */}
+      <div className="mb-6 space-y-4">
+        <VitalSignsForm patientId={patient.id} clinicalNoteId={null} compact />
+        {unassignedVitalSigns.length > 0 && (
+          <>
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+              <p className="font-medium">
+                Hay {unassignedVitalSigns.length === 1 ? 'un registro' : `${unassignedVitalSigns.length} registros`} de signos vitales sin nota asociada
+              </p>
+              <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
+                Guarda el borrador para habilitar el botón &ldquo;Asociar a esta nota&rdquo;.
+              </p>
+            </div>
+            {/* attachToNoteId={null} keeps the button visible but disabled until
+                the doctor saves the draft and is redirected to the edit page. */}
+            <VitalSignsHistory
+              records={unassignedVitalSigns}
+              timeZone={clinicSettings.timezone}
+              attachToNoteId={null}
+            />
+          </>
+        )}
       </div>
 
       <ClinicalNoteForm

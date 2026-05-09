@@ -15,6 +15,9 @@ import { ToggleActiveButton } from '@/components/patients/toggle-active-button';
 import { MedicalHistoryForm } from '@/components/patients/medical-history-form';
 import { PatientAppointments } from '@/components/appointments/patient-appointments';
 import { ClinicalNoteTimeline } from '@/components/clinical-notes/clinical-note-timeline';
+import { VitalSignsForm } from '@/components/vital-signs/vital-signs-form';
+import { VitalSignsHistory } from '@/components/vital-signs/vital-signs-history';
+import { getVitalSignsByPatient } from '@/queries/vital-signs';
 import { AttachmentUploader } from '@/components/attachments/attachment-uploader';
 import { AttachmentList } from '@/components/attachments/attachment-list';
 import { PatientAvatar } from '@/components/patients/patient-avatar';
@@ -51,9 +54,11 @@ export default async function PatientDetailPage({ params }: PageProps) {
   });
 
   const canViewClinical = CLINICAL_ROLES.has(session.role);
+  // Vital signs are visible to every clinic role (incl. receptionist) because
+  // the assistant who took the measurements needs to confirm them.
   const allowedTabs: PatientTabId[] = canViewClinical
-    ? ['datos', 'pareja', 'citas', 'historia', 'notas', 'documentos', 'adjuntos']
-    : ['datos', 'pareja', 'citas', 'adjuntos'];
+    ? ['datos', 'pareja', 'citas', 'historia', 'signos', 'notas', 'documentos', 'adjuntos']
+    : ['datos', 'pareja', 'citas', 'signos', 'adjuntos'];
 
   const [
     medicalHistory,
@@ -64,6 +69,7 @@ export default async function PatientDetailPage({ params }: PageProps) {
     patientDocuments,
     partner,
     allergies,
+    vitalSignsRecords,
   ] = await Promise.all([
     canViewClinical ? getMedicalHistory(patient.id) : Promise.resolve(null),
     canViewClinical
@@ -77,6 +83,7 @@ export default async function PatientDetailPage({ params }: PageProps) {
       : Promise.resolve([]),
     getPatientPartner(patient.id),
     getPatientAllergies(session.clinicId, patient.id),
+    getVitalSignsByPatient(session.clinicId, patient.id),
   ]);
 
   const todayStr = todayInTz(clinicSettings.timezone);
@@ -225,6 +232,15 @@ export default async function PatientDetailPage({ params }: PageProps) {
               canCreate={canCreateNote}
             />
           ) : undefined
+        }
+        signosSlot={
+          <div className="space-y-4">
+            <VitalSignsForm patientId={patient.id} clinicalNoteId={null} />
+            <VitalSignsHistory
+              records={vitalSignsRecords}
+              timeZone={clinicSettings.timezone}
+            />
+          </div>
         }
         documentosSlot={
           canViewClinical ? (

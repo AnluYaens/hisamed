@@ -7,6 +7,8 @@ import { getClinicSettings } from '@/queries/clinic';
 import { getAttachmentsByClinicalNote } from '@/queries/attachments';
 import { ClinicalNoteForm } from '@/components/clinical-notes/clinical-note-form';
 import { ClinicalNoteView } from '@/components/clinical-notes/clinical-note-view';
+import { VitalSignsHistory } from '@/components/vital-signs/vital-signs-history';
+import { getVitalSignsByPatient } from '@/queries/vital-signs';
 import { AttachmentUploader } from '@/components/attachments/attachment-uploader';
 import { AttachmentList } from '@/components/attachments/attachment-list';
 import { safeAuditLog, getClientIpFromHeaders } from '@/lib/audit';
@@ -54,10 +56,17 @@ export default async function ClinicalNoteDetailPage({ params }: PageProps) {
   const isOwnUnsignedByDoctor =
     session.role === 'doctor' && session.userId === note.authorId && !note.isSigned;
 
-  const [clinicSettings, noteAttachments] = await Promise.all([
+  const [clinicSettings, noteAttachments, vitalSignsRecords] = await Promise.all([
     getClinicSettings(session.clinicId),
     getAttachmentsByClinicalNote(session.clinicId, note.id),
+    getVitalSignsByPatient(session.clinicId, note.patientId),
   ]);
+  // Records already linked to *this* note plus any unassigned ones for the
+  // patient. Other notes' vital signs stay out — they belong to that visit.
+  const relevantVitalSigns = vitalSignsRecords.filter(
+    (r) => r.clinicalNoteId === note.id || r.clinicalNoteId === null,
+  );
+  const hasUnassigned = relevantVitalSigns.some((r) => r.clinicalNoteId === null);
   const todayStr = todayInTz(clinicSettings.timezone);
   const canViewInternalNotes = session.role === 'doctor';
 
@@ -79,6 +88,25 @@ export default async function ClinicalNoteDetailPage({ params }: PageProps) {
           {isOwnUnsignedByDoctor ? 'Editar nota de evolución' : 'Nota de evolución'}
         </h1>
       </div>
+
+      {/* Vital signs section — sits above the SOAP note (mirrors the new-note
+          page). Only the unsigned-author doctor can attach unassigned records;
+          other roles or signed notes just see the read-only history. */}
+      {relevantVitalSigns.length > 0 && (
+        <section className="mb-6 space-y-4">
+          {isOwnUnsignedByDoctor && hasUnassigned && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+              Hay signos vitales del paciente sin nota asociada. Usa el botón
+              &ldquo;Asociar a esta nota&rdquo; para vincularlos a esta consulta.
+            </div>
+          )}
+          <VitalSignsHistory
+            records={relevantVitalSigns}
+            timeZone={clinicSettings.timezone}
+            attachToNoteId={isOwnUnsignedByDoctor ? note.id : undefined}
+          />
+        </section>
+      )}
 
       {isOwnUnsignedByDoctor ? (
         <ClinicalNoteForm

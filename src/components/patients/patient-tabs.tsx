@@ -13,6 +13,7 @@ export type PatientTabId =
   | 'pareja'
   | 'citas'
   | 'historia'
+  | 'signos'
   | 'notas'
   | 'documentos'
   | 'adjuntos';
@@ -27,6 +28,7 @@ const ALL_TABS: TabDef[] = [
   { id: 'pareja', label: 'Pareja' },
   { id: 'citas', label: 'Citas' },
   { id: 'historia', label: 'Historia clínica' },
+  { id: 'signos', label: 'Signos vitales' },
   { id: 'notas', label: 'Notas clínicas' },
   { id: 'documentos', label: 'Documentos' },
   { id: 'adjuntos', label: 'Adjuntos' },
@@ -48,6 +50,7 @@ interface PatientTabsProps {
   documentosSlot?: ReactNode;
   adjuntosSlot?: ReactNode;
   parejaSlot?: ReactNode;
+  signosSlot?: ReactNode;
 }
 
 export function PatientTabs({
@@ -60,6 +63,7 @@ export function PatientTabs({
   documentosSlot,
   adjuntosSlot,
   parejaSlot,
+  signosSlot,
 }: PatientTabsProps) {
   const allowed = new Set(allowedTabs);
   const initialTab: PatientTabId = allowed.has('datos')
@@ -154,6 +158,8 @@ export function PatientTabs({
       )}
 
       {activeTab === 'historia' && allowed.has('historia') && historiaSlot}
+
+      {activeTab === 'signos' && allowed.has('signos') && signosSlot}
 
       {activeTab === 'notas' && allowed.has('notas') && notasSlot}
 
