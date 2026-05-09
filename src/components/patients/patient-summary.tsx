@@ -1,4 +1,4 @@
-import { Calendar, FileText, Mail, MapPin, Phone, Shield, User } from 'lucide-react';
+import { AtSign, Briefcase, Calendar, FileText, Mail, MapPin, Phone, Shield, User } from 'lucide-react';
 import type { Patient } from '@/lib/db/schema';
 
 function calcAge(dateOfBirth: string): number {
@@ -40,6 +40,22 @@ export function PatientSummary({ patient }: PatientSummaryProps) {
         <DataRow label="Fecha de nac." value={dob} />
         <DataRow label="Edad" value={`${age} años`} />
         <DataRow label="Sexo" value={SEX_LABELS[patient.sex] ?? patient.sex} />
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <dt className="shrink-0 text-zinc-500 dark:text-zinc-400">Grupo sanguíneo</dt>
+          <dd className="flex items-center gap-1.5">
+            <span className="font-medium text-zinc-800 dark:text-zinc-200">
+              {patient.bloodType ?? '—'}
+            </span>
+            {patient.rhIncompatibility && (
+              <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                ⚠️ Incompatibilidad Rh
+              </span>
+            )}
+          </dd>
+        </div>
+        {patient.occupation && (
+          <DataRow label="Ocupación" value={patient.occupation} icon={<Briefcase className="h-3 w-3" />} />
+        )}
       </SummaryCard>
 
       {/* Contact */}
@@ -51,6 +67,12 @@ export function PatientSummary({ patient }: PatientSummaryProps) {
           value={patient.address ?? '—'}
           icon={<MapPin className="h-3 w-3" />}
         />
+        {patient.instagram && (
+          <DataRow label="Instagram" value={patient.instagram} icon={<AtSign className="h-3 w-3" />} />
+        )}
+        {patient.referralSource && (
+          <DataRow label="Referido por" value={patient.referralSource} />
+        )}
       </SummaryCard>
 
       {/* Emergency */}

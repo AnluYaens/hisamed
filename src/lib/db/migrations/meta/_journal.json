@@ -29,6 +29,13 @@
       "when": 1778184067645,
       "tag": "0003_flowery_toro",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778271203482,
+      "tag": "0004_yummy_namor",
+      "breakpoints": true
     }
   ]
 }

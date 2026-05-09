@@ -1,6 +1,6 @@
 import { and, count, desc, eq, ilike, or } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { patients, medicalHistories } from '@/lib/db/schema';
+import { patients, patientPartners } from '@/lib/db/schema';
 
 const DEFAULT_LIMIT = 20;
 
@@ -110,6 +110,13 @@ export async function getPatientById(clinicId: string, patientId: string) {
     where: and(eq(patients.id, patientId), eq(patients.clinicId, clinicId)),
   });
 
+  return row ?? null;
+}
+
+export async function getPatientPartner(patientId: string) {
+  const row = await db.query.patientPartners.findFirst({
+    where: eq(patientPartners.patientId, patientId),
+  });
   return row ?? null;
 }
 

@@ -3,11 +3,11 @@
 import { and, eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
-import { patients, medicalHistories } from '@/lib/db/schema';
+import { patients, medicalHistories, patientPartners } from '@/lib/db/schema';
 import { requireSession, requireRole } from '@/lib/auth/session';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { generateId } from '@/lib/utils/generate-id';
-import { patientCreateSchema, patientUpdateSchema } from '@/lib/validators/patient';
+import { patientCreateSchema, patientUpdateSchema, partnerUpsertSchema } from '@/lib/validators/patient';
 import { checkDuplicateIdNumber, getPatientById } from '@/queries/patients';
 import { toDateStr } from '@/lib/dates';
 
@@ -74,6 +74,11 @@ export async function createPatient(
       emergencyContactPhone: data.emergency_contact_phone ?? null,
       insuranceInfo: data.insurance_info ?? null,
       notes: data.notes ?? null,
+      bloodType: data.blood_type || null,
+      rhIncompatibility: data.rh_incompatibility ?? false,
+      instagram: data.instagram ?? null,
+      referralSource: data.referral_source ?? null,
+      occupation: data.occupation ?? null,
       createdBy: session.userId,
     });
 
@@ -163,6 +168,11 @@ export async function updatePatient(
   if (fields.insurance_info !== undefined)
     updateData.insuranceInfo = fields.insurance_info ?? null;
   if (fields.notes !== undefined) updateData.notes = fields.notes ?? null;
+  if (fields.blood_type !== undefined) updateData.bloodType = fields.blood_type || null;
+  if (fields.rh_incompatibility !== undefined) updateData.rhIncompatibility = fields.rh_incompatibility ?? false;
+  if (fields.instagram !== undefined) updateData.instagram = fields.instagram ?? null;
+  if (fields.referral_source !== undefined) updateData.referralSource = fields.referral_source ?? null;
+  if (fields.occupation !== undefined) updateData.occupation = fields.occupation ?? null;
 
   await db
     .update(patients)
@@ -223,4 +233,85 @@ export async function togglePatientActive(
   });
 
   return { success: true };
+}
+
+// ─── upsertPatientPartner ──────────────────────────────────────────────────────
+
+export async function upsertPatientPartner(
+  _prevState: PatientActionState,
+  formData: FormData,
+): Promise<PatientActionState> {
+  let session;
+  try {
+    session = await requireSession();
+  } catch {
+    return { success: false, error: 'No autenticado' };
+  }
+
+  const raw = Object.fromEntries(formData.entries());
+  const parsed = partnerUpsertSchema.safeParse(raw);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: 'Revisa los datos del formulario',
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  const { patient_id, ...fields } = parsed.data;
+
+  const patient = await getPatientById(session.clinicId, patient_id);
+  if (!patient) {
+    return { success: false, error: 'Paciente no encontrado' };
+  }
+
+  const existing = await db.query.patientPartners.findFirst({
+    where: eq(patientPartners.patientId, patient_id),
+    columns: { id: true },
+  });
+
+  const isCreate = !existing;
+
+  if (isCreate) {
+    await db.insert(patientPartners).values({
+      id: generateId(),
+      patientId: patient_id,
+      fullName: fields.full_name,
+      idNumber: fields.id_number ?? null,
+      dateOfBirth: fields.date_of_birth || null,
+      phone: fields.phone ?? null,
+      email: fields.email || null,
+      bloodType: fields.blood_type || null,
+      occupation: fields.occupation ?? null,
+      notes: fields.notes ?? null,
+    });
+  } else {
+    await db
+      .update(patientPartners)
+      .set({
+        fullName: fields.full_name,
+        idNumber: fields.id_number ?? null,
+        dateOfBirth: fields.date_of_birth || null,
+        phone: fields.phone ?? null,
+        email: fields.email || null,
+        bloodType: fields.blood_type || null,
+        occupation: fields.occupation ?? null,
+        notes: fields.notes ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(patientPartners.patientId, patient_id));
+  }
+
+  await auditLog({
+    clinicId: session.clinicId,
+    userId: session.userId,
+    action: isCreate ? 'CREATE' : 'UPDATE',
+    resourceType: 'patient_partner',
+    resourceId: patient_id,
+    details: { fields: Object.keys(fields) },
+    ipAddress: await getClientIpFromHeaders(),
+  });
+
+  return { success: true, patientId: patient_id };
 }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import type { PatientActionState } from '@/actions/patients';
 import type { Patient } from '@/lib/db/schema';
 import { toDateStr } from '@/lib/dates';
+import { BLOOD_TYPES } from '@/lib/validators/patient';
 
 type Tab = 'personal' | 'contact' | 'insurance';
 
@@ -184,6 +185,53 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
             </select>
             {field('sex') && <FieldError msg={field('sex')} />}
           </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="blood_type" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Grupo sanguíneo
+            </label>
+            <select
+              id="blood_type"
+              name="blood_type"
+              defaultValue={patient?.bloodType ?? ''}
+              className={fieldClass(!!field('blood_type'))}
+            >
+              <option value="">Desconocido</option>
+              {BLOOD_TYPES.map((bt) => (
+                <option key={bt} value={bt}>{bt}</option>
+              ))}
+            </select>
+            {field('blood_type') && <FieldError msg={field('blood_type')} />}
+          </div>
+
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              id="rh_incompatibility"
+              name="rh_incompatibility"
+              type="checkbox"
+              defaultChecked={patient?.rhIncompatibility ?? false}
+              value="true"
+              className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:border-zinc-600"
+            />
+            <label htmlFor="rh_incompatibility" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Incompatibilidad Rh
+            </label>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="occupation" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Ocupación
+            </label>
+            <input
+              id="occupation"
+              name="occupation"
+              type="text"
+              defaultValue={patient?.occupation ?? ''}
+              placeholder="Ej: Enfermera, Ingeniero, Estudiante…"
+              className={fieldClass(!!field('occupation'))}
+            />
+            {field('occupation') && <FieldError msg={field('occupation')} />}
+          </div>
         </div>
       )}
 
@@ -262,6 +310,36 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               className={fieldClass(!!field('emergency_contact_phone'))}
             />
           </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="instagram" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Instagram
+            </label>
+            <input
+              id="instagram"
+              name="instagram"
+              type="text"
+              defaultValue={patient?.instagram ?? ''}
+              placeholder="Ej: @nombre_usuario"
+              className={fieldClass(!!field('instagram'))}
+            />
+            {field('instagram') && <FieldError msg={field('instagram')} />}
+          </div>
+
+          <div className="col-span-full space-y-1.5">
+            <label htmlFor="referral_source" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              ¿Cómo se enteró / quién lo recomendó?
+            </label>
+            <input
+              id="referral_source"
+              name="referral_source"
+              type="text"
+              defaultValue={patient?.referralSource ?? ''}
+              placeholder="Ej: Instagram, recomendación de Dra. García, Google…"
+              className={fieldClass(!!field('referral_source'))}
+            />
+            {field('referral_source') && <FieldError msg={field('referral_source')} />}
+          </div>
         </div>
       )}
 
@@ -315,7 +393,10 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setActiveTab(activeTab === 'personal' ? 'contact' : 'insurance')}
+              onClick={() => {
+                if (activeTab === 'personal') setActiveTab('contact');
+                else setActiveTab('insurance');
+              }}
             >
               Siguiente
             </Button>

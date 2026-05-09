@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import { getSession } from '@/lib/auth/session';
 import { getPatientById } from '@/queries/patients';
+import { getMedicalHistory } from '@/queries/medical-history';
 import { getUserById } from '@/queries/users';
 import { getClinicSettings } from '@/queries/clinic';
 import { ClinicalDocumentForm } from '@/components/clinical-documents/clinical-document-form';
@@ -39,6 +40,9 @@ export default async function NewClinicalDocumentPage({ params, searchParams }: 
   ]);
   if (!patient) notFound();
 
+  const medicalHistory = await getMedicalHistory(patient.id);
+  const allergies = medicalHistory?.allergies?.trim() || null;
+
   const todayStr = todayInTz(clinicSettings.timezone);
 
   // Optional ?type= deep link from "documentar consulta" or similar entry points.
@@ -51,6 +55,12 @@ export default async function NewClinicalDocumentPage({ params, searchParams }: 
 
   return (
     <div className="p-6 lg:p-8">
+      {allergies && (
+        <div className="mb-4 flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span><strong>ALERGIAS:</strong> {allergies}</span>
+        </div>
+      )}
       <Link
         href={`/pacientes/${patient.id}/documentos`}
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"

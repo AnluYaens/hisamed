@@ -56,3 +56,26 @@ export async function getMedicalHistory(
     specialtyData: (row.specialtyData as GynecologyData | null) ?? null,
   };
 }
+
+// Returns only the `allergies` field so the safety banner can be rendered for
+// every role (incl. receptionist) without leaking the rest of the medical
+// history. Clinic scope is enforced via the join, so callers cannot read
+// another clinic's data.
+export async function getPatientAllergies(
+  clinicId: string,
+  patientId: string,
+): Promise<string | null> {
+  const rows = await db
+    .select({ allergies: medicalHistories.allergies })
+    .from(medicalHistories)
+    .innerJoin(patients, eq(medicalHistories.patientId, patients.id))
+    .where(
+      and(
+        eq(medicalHistories.patientId, patientId),
+        eq(patients.clinicId, clinicId),
+      ),
+    )
+    .limit(1);
+
+  return rows[0]?.allergies ?? null;
+}

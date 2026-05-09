@@ -21,6 +21,8 @@ import { sql } from 'drizzle-orm';
 
 export const userRoleEnum = pgEnum('user_role', ['admin', 'doctor', 'receptionist']);
 
+export const bloodTypeEnum = pgEnum('blood_type', ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']);
+
 export const idTypeEnum = pgEnum('id_type', ['cedula', 'passport', 'other']);
 
 export const sexEnum = pgEnum('sex', ['F', 'M', 'other']);
@@ -120,6 +122,11 @@ export const patients = pgTable(
     insuranceInfo: text('insurance_info'),
     notes: text('notes'),
     avatarStorageKey: varchar('avatar_storage_key', { length: 500 }),
+    bloodType: bloodTypeEnum('blood_type'),
+    rhIncompatibility: boolean('rh_incompatibility').notNull().default(false),
+    instagram: varchar('instagram', { length: 100 }),
+    referralSource: varchar('referral_source', { length: 255 }),
+    occupation: varchar('occupation', { length: 255 }),
     isActive: boolean('is_active').notNull().default(true),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -152,6 +159,31 @@ export const medicalHistories = pgTable('medical_histories', {
     .notNull()
     .references(() => users.id),
 });
+
+export const patientPartners = pgTable(
+  'patient_partners',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    patientId: uuid('patient_id')
+      .notNull()
+      .unique()
+      .references(() => patients.id),
+    fullName: varchar('full_name', { length: 255 }).notNull(),
+    idNumber: varchar('id_number', { length: 50 }),
+    dateOfBirth: date('date_of_birth'),
+    phone: varchar('phone', { length: 50 }),
+    email: varchar('email', { length: 255 }),
+    bloodType: bloodTypeEnum('blood_type'),
+    occupation: varchar('occupation', { length: 255 }),
+    notes: text('notes'),
+    avatarStorageKey: varchar('avatar_storage_key', { length: 500 }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('patient_partners_patient_id_idx').on(table.patientId),
+  ],
+);
 
 export const appointments = pgTable(
   'appointments',
@@ -308,9 +340,14 @@ export const patientsRelations = relations(patients, ({ one, many }) => ({
   clinic: one(clinics, { fields: [patients.clinicId], references: [clinics.id] }),
   createdByUser: one(users, { fields: [patients.createdBy], references: [users.id] }),
   medicalHistory: one(medicalHistories),
+  partner: one(patientPartners),
   appointments: many(appointments),
   clinicalNotes: many(clinicalNotes),
   attachments: many(attachments),
+}));
+
+export const patientPartnersRelations = relations(patientPartners, ({ one }) => ({
+  patient: one(patients, { fields: [patientPartners.patientId], references: [patients.id] }),
 }));
 
 export const medicalHistoriesRelations = relations(medicalHistories, ({ one }) => ({
@@ -394,5 +431,9 @@ export type ClinicalDocumentType =
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
 
+export type PatientPartner = typeof patientPartners.$inferSelect;
+export type NewPatientPartner = typeof patientPartners.$inferInsert;
+
 export type UserRole = 'admin' | 'doctor' | 'receptionist';
 export type AuditAction = 'CREATE' | 'READ' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'EXPORT';
+export type BloodType = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';

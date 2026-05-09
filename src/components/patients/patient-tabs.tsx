@@ -10,6 +10,7 @@ import { updatePatient } from '@/actions/patients';
 
 export type PatientTabId =
   | 'datos'
+  | 'pareja'
   | 'citas'
   | 'historia'
   | 'notas'
@@ -23,6 +24,7 @@ interface TabDef {
 
 const ALL_TABS: TabDef[] = [
   { id: 'datos', label: 'Datos personales' },
+  { id: 'pareja', label: 'Pareja' },
   { id: 'citas', label: 'Citas' },
   { id: 'historia', label: 'Historia clínica' },
   { id: 'notas', label: 'Notas clínicas' },
@@ -45,6 +47,7 @@ interface PatientTabsProps {
   citasSlot?: ReactNode;
   documentosSlot?: ReactNode;
   adjuntosSlot?: ReactNode;
+  parejaSlot?: ReactNode;
 }
 
 export function PatientTabs({
@@ -56,6 +59,7 @@ export function PatientTabs({
   citasSlot,
   documentosSlot,
   adjuntosSlot,
+  parejaSlot,
 }: PatientTabsProps) {
   const allowed = new Set(allowedTabs);
   const initialTab: PatientTabId = allowed.has('datos')
@@ -129,6 +133,15 @@ export function PatientTabs({
             <PatientSummary patient={patient} />
           )}
         </div>
+      )}
+
+      {activeTab === 'pareja' && allowed.has('pareja') && (
+        parejaSlot ?? (
+          <PlaceholderSection
+            title="Pareja"
+            description="No hay datos de pareja registrados aún."
+          />
+        )
       )}
 
       {activeTab === 'citas' && allowed.has('citas') && (
