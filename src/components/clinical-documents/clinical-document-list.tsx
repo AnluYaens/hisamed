@@ -2,7 +2,9 @@ import Link from 'next/link';
 import {
   FilePlus2,
   FileText,
+  FlaskConical,
   HeartPulse,
+  Microscope,
   Pill,
   Send,
   Stamp,
@@ -28,6 +30,9 @@ const TYPE_ICONS: Record<ClinicalDocumentType, React.ComponentType<{ className?:
   referral: Send,
   prescription: Pill,
   patient_instructions: FileText,
+  lab_order: FlaskConical,
+  imaging_order: Microscope,
+  interconsultation: Send,
 };
 
 function formatDateTime(date: Date, timeZone: string): string {

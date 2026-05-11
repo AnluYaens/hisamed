@@ -225,3 +225,53 @@ export async function getClinicalNoteById(
   };
 }
 
+// ─── getLatestClinicalNotePrefill ─────────────────────────────────────────────
+//
+// Fetches only the fields needed to prefill the interconsultation
+// clinical_summary. When noteId is given (URL ?clinical_note_id=) that
+// specific note is used; otherwise the most recent note for the patient is
+// returned. Returns null if no note exists. Only accessible to doctors
+// (the only role that can reach the new-document page).
+
+export interface ClinicalNotePrefill {
+  chiefComplaint: string | null;
+  assessment: string | null;
+  plan: string | null;
+  diagnoses: DiagnosisEntry[];
+}
+
+export async function getLatestClinicalNotePrefill(
+  clinicId: string,
+  patientId: string,
+  noteId?: string | null,
+): Promise<ClinicalNotePrefill | null> {
+  await requireRole(['doctor']);
+
+  const whereClause = noteId
+    ? and(eq(clinicalNotes.id, noteId), eq(patients.clinicId, clinicId))
+    : and(eq(clinicalNotes.patientId, patientId), eq(patients.clinicId, clinicId));
+
+  const rows = await db
+    .select({
+      chiefComplaint: clinicalNotes.chiefComplaint,
+      assessment: clinicalNotes.assessment,
+      plan: clinicalNotes.plan,
+      diagnoses: clinicalNotes.diagnoses,
+    })
+    .from(clinicalNotes)
+    .innerJoin(patients, eq(clinicalNotes.patientId, patients.id))
+    .where(whereClause)
+    .orderBy(desc(clinicalNotes.noteDate), desc(clinicalNotes.createdAt))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  const r = rows[0];
+
+  return {
+    chiefComplaint: r.chiefComplaint,
+    assessment: r.assessment,
+    plan: r.plan,
+    diagnoses: parseDiagnoses(r.diagnoses),
+  };
+}
+

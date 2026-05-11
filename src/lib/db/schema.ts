@@ -64,6 +64,9 @@ export const clinicalDocumentTypeEnum = pgEnum('clinical_document_type', [
   'referral',
   'prescription',
   'patient_instructions',
+  'lab_order',
+  'imaging_order',
+  'interconsultation',
 ]);
 
 // ─── Tables ───────────────────────────────────────────────────────────────────
@@ -484,7 +487,10 @@ export type ClinicalDocumentType =
   | 'medical_certificate'
   | 'referral'
   | 'prescription'
-  | 'patient_instructions';
+  | 'patient_instructions'
+  | 'lab_order'
+  | 'imaging_order'
+  | 'interconsultation';
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;

@@ -20,6 +20,81 @@ import {
   type ClinicalDocumentType,
 } from '@/lib/validators/clinical-document';
 
+// ─── Frequent study lists ─────────────────────────────────────────────────────
+
+const LAB_STUDY_GROUPS: { label: string; studies: string[] }[] = [
+  {
+    label: 'Hematología',
+    studies: ['Hematología completa', 'VSG', 'PCR'],
+  },
+  {
+    label: 'Química',
+    studies: [
+      'Glicemia',
+      'Urea',
+      'Creatinina',
+      'Ácido úrico',
+      'Perfil lipídico',
+      'Perfil hepático',
+    ],
+  },
+  {
+    label: 'Hormonas',
+    studies: [
+      'FSH',
+      'LH',
+      'Estradiol',
+      'Progesterona',
+      'Prolactina',
+      'TSH',
+      'T4L',
+      'Testosterona',
+      'DHEA-S',
+      'AMH',
+    ],
+  },
+  {
+    label: 'Serología',
+    studies: ['HIV', 'VDRL', 'Hepatitis B', 'Hepatitis C', 'Toxoplasma', 'Rubéola', 'CMV'],
+  },
+  {
+    label: 'Orina',
+    studies: ['Uroanálisis', 'Urocultivo'],
+  },
+  {
+    label: 'Ginecología',
+    studies: ['Cultivo vaginal', 'Citología', 'Tipaje sanguíneo'],
+  },
+  {
+    label: 'Pareja',
+    studies: ['Espermograma', 'Tipaje sanguíneo de la pareja'],
+  },
+];
+
+const FREQUENT_IMAGING_STUDIES = [
+  'Eco transvaginal',
+  'Eco obstétrico',
+  'Eco mamario',
+  'Mamografía bilateral',
+  'Histerosalpingografía',
+  'Resonancia pélvica',
+  'TAC',
+  'Densitometría ósea',
+];
+
+const FREQUENT_SPECIALTIES = [
+  'Cardiología',
+  'Nutrición',
+  'Perinatología',
+  'Hematología',
+  'Endocrinología',
+  'Urología',
+  'Genética',
+  'Psicología',
+  'Anestesiología',
+  'Medicina interna',
+];
+
 // ─── Shared input classes (mirrors clinical-note-form) ────────────────────────
 
 function fieldClass(hasError = false) {
@@ -96,6 +171,36 @@ interface PatientInstructionsState {
   instructions: string;
 }
 
+interface StudyRow {
+  name: string;
+  notes: string;
+}
+
+interface LabOrderState {
+  studies: StudyRow[];
+  clinical_indication: string;
+  fasting_required: boolean;
+  urgency: 'routine' | 'urgent';
+  additional_instructions: string;
+}
+
+interface ImagingOrderState {
+  studies: StudyRow[];
+  clinical_indication: string;
+  urgency: 'routine' | 'urgent';
+}
+
+interface InterconsultationState {
+  specialty: string;
+  specialtyCustom: string;
+  doctor_name: string;
+  reason: string;
+  clinical_summary: string;
+  current_medications: string;
+  urgency: 'routine' | 'priority' | 'urgent';
+  questions_for_specialist: string;
+}
+
 function emptyMedication(): MedicationRow {
   return { name: '', dose: '', frequency: '', duration: '', instructions: '' };
 }
@@ -144,6 +249,10 @@ interface ClinicalDocumentFormProps {
   initialType?: ClinicalDocumentType;
   /** Optional clinical_note_id to associate (e.g. from "documentar consulta"). */
   clinicalNoteId?: string | null;
+  /** Prefill for interconsultation current_medications from medical history. */
+  prefillCurrentMedications?: string | null;
+  /** Prefill for interconsultation clinical_summary from the latest clinical note. */
+  prefillClinicalSummary?: string | null;
 }
 
 export function ClinicalDocumentForm({
@@ -152,6 +261,8 @@ export function ClinicalDocumentForm({
   todayStr,
   initialType,
   clinicalNoteId,
+  prefillCurrentMedications,
+  prefillClinicalSummary,
 }: ClinicalDocumentFormProps) {
   const [state, action, isPending] = useActionState<
     ClinicalDocumentActionState,
@@ -191,6 +302,31 @@ export function ClinicalDocumentForm({
 
   const [instructions, setInstructions] = useState<PatientInstructionsState>({
     instructions: '',
+  });
+
+  const [labOrder, setLabOrder] = useState<LabOrderState>({
+    studies: [],
+    clinical_indication: '',
+    fasting_required: false,
+    urgency: 'routine',
+    additional_instructions: '',
+  });
+
+  const [imagingOrder, setImagingOrder] = useState<ImagingOrderState>({
+    studies: [],
+    clinical_indication: '',
+    urgency: 'routine',
+  });
+
+  const [interconsultation, setInterconsultation] = useState<InterconsultationState>({
+    specialty: '',
+    specialtyCustom: '',
+    doctor_name: '',
+    reason: '',
+    clinical_summary: prefillClinicalSummary?.trim() ?? '',
+    current_medications: prefillCurrentMedications?.trim() ?? '',
+    urgency: 'routine',
+    questions_for_specialist: '',
   });
 
   // Reset title to the type-default when changing types if the user hasn't
@@ -299,8 +435,60 @@ export function ClinicalDocumentForm({
             instructions: instructions.instructions.trim(),
           },
         };
+      case 'lab_order': {
+        const resolvedStudies = labOrder.studies.filter((s) => s.name.trim().length > 0);
+        return {
+          ...base,
+          document_type: 'lab_order',
+          content: {
+            studies: resolvedStudies.map((s) => ({
+              name: s.name.trim(),
+              notes: s.notes.trim() || undefined,
+            })),
+            clinical_indication: labOrder.clinical_indication.trim(),
+            fasting_required: labOrder.fasting_required,
+            urgency: labOrder.urgency,
+            additional_instructions: labOrder.additional_instructions.trim() || undefined,
+          },
+        };
+      }
+      case 'imaging_order': {
+        const resolvedStudies = imagingOrder.studies.filter((s) => s.name.trim().length > 0);
+        return {
+          ...base,
+          document_type: 'imaging_order',
+          content: {
+            studies: resolvedStudies.map((s) => ({
+              name: s.name.trim(),
+              notes: s.notes.trim() || undefined,
+            })),
+            clinical_indication: imagingOrder.clinical_indication.trim(),
+            urgency: imagingOrder.urgency,
+          },
+        };
+      }
+      case 'interconsultation': {
+        const specialty =
+          interconsultation.specialty === '__custom__'
+            ? interconsultation.specialtyCustom.trim()
+            : interconsultation.specialty.trim();
+        return {
+          ...base,
+          document_type: 'interconsultation',
+          content: {
+            specialty,
+            doctor_name: interconsultation.doctor_name.trim() || undefined,
+            reason: interconsultation.reason.trim(),
+            clinical_summary: interconsultation.clinical_summary.trim(),
+            current_medications: interconsultation.current_medications.trim() || undefined,
+            urgency: interconsultation.urgency,
+            questions_for_specialist:
+              interconsultation.questions_for_specialist.trim() || undefined,
+          },
+        };
+      }
     }
-  }, [docType, title, clinicalNoteId, medicalRest, certificate, referral, medications, instructions]);
+  }, [docType, title, clinicalNoteId, medicalRest, certificate, referral, medications, instructions, labOrder, imagingOrder, interconsultation]);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -445,6 +633,27 @@ export function ClinicalDocumentForm({
         <PatientInstructionsFields
           state={instructions}
           onChange={(v) => setInstructions({ instructions: v })}
+          err={err}
+        />
+      )}
+      {docType === 'lab_order' && (
+        <LabOrderFields
+          state={labOrder}
+          onChange={setLabOrder}
+          err={err}
+        />
+      )}
+      {docType === 'imaging_order' && (
+        <ImagingOrderFields
+          state={imagingOrder}
+          onChange={setImagingOrder}
+          err={err}
+        />
+      )}
+      {docType === 'interconsultation' && (
+        <InterconsultationFields
+          state={interconsultation}
+          onChange={setInterconsultation}
           err={err}
         />
       )}
@@ -830,6 +1039,585 @@ function PatientInstructionsFields({
           className={textareaClass(!!err('content.instructions'))}
         />
         <FieldError msg={err('content.instructions')} />
+      </div>
+    </section>
+  );
+}
+
+// ─── LabOrderFields ───────────────────────────────────────────────────────────
+
+function LabOrderFields({
+  state,
+  onChange,
+  err,
+}: {
+  state: LabOrderState;
+  onChange: (next: LabOrderState) => void;
+  err: (key: string) => string | undefined;
+}) {
+  const selectedNames = new Set(state.studies.map((s) => s.name));
+
+  function toggleFrequent(name: string) {
+    if (selectedNames.has(name)) {
+      onChange({ ...state, studies: state.studies.filter((s) => s.name !== name) });
+    } else {
+      onChange({ ...state, studies: [...state.studies, { name, notes: '' }] });
+    }
+  }
+
+  function addCustomStudy() {
+    onChange({ ...state, studies: [...state.studies, { name: '', notes: '' }] });
+  }
+
+  function updateStudy(idx: number, key: keyof StudyRow, value: string) {
+    onChange({
+      ...state,
+      studies: state.studies.map((s, i) => (i === idx ? { ...s, [key]: value } : s)),
+    });
+  }
+
+  function removeStudy(idx: number) {
+    onChange({ ...state, studies: state.studies.filter((_, i) => i !== idx) });
+  }
+
+  const studiesError = err('content.studies');
+  const customStudies = state.studies.filter((s) => !LAB_STUDY_GROUPS.flatMap((g) => g.studies).includes(s.name));
+
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+      <h2 className="mb-4 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+        Orden de laboratorio
+      </h2>
+      <div className="space-y-5">
+
+        {/* Frequent studies by category */}
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Estudios frecuentes
+          </p>
+          <div className="space-y-4">
+            {LAB_STUDY_GROUPS.map((group) => (
+              <div key={group.label}>
+                <p className="mb-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  {group.label}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {group.studies.map((study) => {
+                    const checked = selectedNames.has(study);
+                    return (
+                      <label
+                        key={study}
+                        className={[
+                          'inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors',
+                          checked
+                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-950/40 dark:text-blue-300'
+                            : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
+                        ].join(' ')}
+                      >
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={checked}
+                          onChange={() => toggleFrequent(study)}
+                        />
+                        {study}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Notes per selected frequent study */}
+        {state.studies.filter((s) => LAB_STUDY_GROUPS.flatMap((g) => g.studies).includes(s.name)).length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Notas por estudio seleccionado (opcional)
+            </p>
+            {state.studies
+              .filter((s) => LAB_STUDY_GROUPS.flatMap((g) => g.studies).includes(s.name))
+              .map((s) => {
+                const idx = state.studies.indexOf(s);
+                return (
+                  <div key={s.name} className="flex items-center gap-2">
+                    <span className="w-40 shrink-0 truncate text-xs text-zinc-700 dark:text-zinc-300">{s.name}</span>
+                    <input
+                      type="text"
+                      value={s.notes}
+                      onChange={(e) => updateStudy(idx, 'notes', e.target.value)}
+                      maxLength={500}
+                      placeholder="Nota opcional…"
+                      className={fieldClass()}
+                    />
+                  </div>
+                );
+              })}
+          </div>
+        )}
+
+        {/* Custom studies */}
+        {customStudies.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Estudios adicionales
+            </p>
+            {customStudies.map((s) => {
+              const idx = state.studies.indexOf(s);
+              return (
+                <div key={idx} className="flex items-start gap-2">
+                  <div className="flex-1 space-y-1.5">
+                    <input
+                      type="text"
+                      value={s.name}
+                      onChange={(e) => updateStudy(idx, 'name', e.target.value)}
+                      maxLength={255}
+                      placeholder="Nombre del estudio"
+                      className={fieldClass(!!err(`content.studies.${idx}.name`))}
+                    />
+                    <FieldError msg={err(`content.studies.${idx}.name`)} />
+                  </div>
+                  <input
+                    type="text"
+                    value={s.notes}
+                    onChange={(e) => updateStudy(idx, 'notes', e.target.value)}
+                    maxLength={500}
+                    placeholder="Nota opcional"
+                    className={`${fieldClass()} flex-1`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => removeStudy(idx)}
+                    aria-label="Eliminar estudio"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <Button type="button" variant="outline" size="sm" onClick={addCustomStudy}>
+          <Plus className="h-3.5 w-3.5" />
+          Agregar estudio personalizado
+        </Button>
+
+        {studiesError && <FieldError msg={studiesError} />}
+
+        {/* Clinical indication */}
+        <div className="space-y-1.5">
+          <Label htmlFor="lab_indication">
+            Indicación clínica <span className="text-red-500">*</span>
+          </Label>
+          <textarea
+            id="lab_indication"
+            value={state.clinical_indication}
+            onChange={(e) => onChange({ ...state, clinical_indication: e.target.value })}
+            rows={3}
+            maxLength={2000}
+            placeholder="Diagnóstico o motivo clínico que justifica los estudios…"
+            className={textareaClass(!!err('content.clinical_indication'))}
+          />
+          <FieldError msg={err('content.clinical_indication')} />
+        </div>
+
+        {/* Fasting + urgency */}
+        <div className="flex flex-wrap items-center gap-6">
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={state.fasting_required}
+              onChange={(e) => onChange({ ...state, fasting_required: e.target.checked })}
+              className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-zinc-700 dark:text-zinc-300">Requiere ayuno</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="lab_urgency">Urgencia</Label>
+            <select
+              id="lab_urgency"
+              value={state.urgency}
+              onChange={(e) =>
+                onChange({ ...state, urgency: e.target.value as LabOrderState['urgency'] })
+              }
+              className={fieldClass()}
+            >
+              <option value="routine">Rutina</option>
+              <option value="urgent">Urgente</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Additional instructions */}
+        <div className="space-y-1.5">
+          <Label htmlFor="lab_extra">Instrucciones adicionales</Label>
+          <textarea
+            id="lab_extra"
+            value={state.additional_instructions}
+            onChange={(e) => onChange({ ...state, additional_instructions: e.target.value })}
+            rows={2}
+            maxLength={2000}
+            placeholder="Instrucciones especiales para el paciente o el laboratorio…"
+            className={textareaClass()}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── ImagingOrderFields ───────────────────────────────────────────────────────
+
+function ImagingOrderFields({
+  state,
+  onChange,
+  err,
+}: {
+  state: ImagingOrderState;
+  onChange: (next: ImagingOrderState) => void;
+  err: (key: string) => string | undefined;
+}) {
+  const selectedNames = new Set(state.studies.map((s) => s.name));
+
+  function toggleFrequent(name: string) {
+    if (selectedNames.has(name)) {
+      onChange({ ...state, studies: state.studies.filter((s) => s.name !== name) });
+    } else {
+      onChange({ ...state, studies: [...state.studies, { name, notes: '' }] });
+    }
+  }
+
+  function addCustomStudy() {
+    onChange({ ...state, studies: [...state.studies, { name: '', notes: '' }] });
+  }
+
+  function updateStudy(idx: number, key: keyof StudyRow, value: string) {
+    onChange({
+      ...state,
+      studies: state.studies.map((s, i) => (i === idx ? { ...s, [key]: value } : s)),
+    });
+  }
+
+  function removeStudy(idx: number) {
+    onChange({ ...state, studies: state.studies.filter((_, i) => i !== idx) });
+  }
+
+  const studiesError = err('content.studies');
+  const customStudies = state.studies.filter((s) => !FREQUENT_IMAGING_STUDIES.includes(s.name));
+
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+      <h2 className="mb-4 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+        Orden de imagen
+      </h2>
+      <div className="space-y-5">
+
+        {/* Frequent studies */}
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Estudios frecuentes
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {FREQUENT_IMAGING_STUDIES.map((study) => {
+              const checked = selectedNames.has(study);
+              return (
+                <label
+                  key={study}
+                  className={[
+                    'inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors',
+                    checked
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-950/40 dark:text-blue-300'
+                      : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
+                  ].join(' ')}
+                >
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={checked}
+                    onChange={() => toggleFrequent(study)}
+                  />
+                  {study}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Notes per selected frequent study */}
+        {state.studies.filter((s) => FREQUENT_IMAGING_STUDIES.includes(s.name)).length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Notas por estudio (opcional)
+            </p>
+            {state.studies
+              .filter((s) => FREQUENT_IMAGING_STUDIES.includes(s.name))
+              .map((s) => {
+                const idx = state.studies.indexOf(s);
+                return (
+                  <div key={s.name} className="flex items-center gap-2">
+                    <span className="w-48 shrink-0 truncate text-xs text-zinc-700 dark:text-zinc-300">{s.name}</span>
+                    <input
+                      type="text"
+                      value={s.notes}
+                      onChange={(e) => updateStudy(idx, 'notes', e.target.value)}
+                      maxLength={500}
+                      placeholder="Nota opcional…"
+                      className={fieldClass()}
+                    />
+                  </div>
+                );
+              })}
+          </div>
+        )}
+
+        {/* Custom studies */}
+        {customStudies.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Estudios adicionales
+            </p>
+            {customStudies.map((s) => {
+              const idx = state.studies.indexOf(s);
+              return (
+                <div key={idx} className="flex items-start gap-2">
+                  <div className="flex-1 space-y-1.5">
+                    <input
+                      type="text"
+                      value={s.name}
+                      onChange={(e) => updateStudy(idx, 'name', e.target.value)}
+                      maxLength={255}
+                      placeholder="Nombre del estudio"
+                      className={fieldClass(!!err(`content.studies.${idx}.name`))}
+                    />
+                    <FieldError msg={err(`content.studies.${idx}.name`)} />
+                  </div>
+                  <input
+                    type="text"
+                    value={s.notes}
+                    onChange={(e) => updateStudy(idx, 'notes', e.target.value)}
+                    maxLength={500}
+                    placeholder="Nota opcional"
+                    className={`${fieldClass()} flex-1`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => removeStudy(idx)}
+                    aria-label="Eliminar estudio"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <Button type="button" variant="outline" size="sm" onClick={addCustomStudy}>
+          <Plus className="h-3.5 w-3.5" />
+          Agregar estudio personalizado
+        </Button>
+
+        {studiesError && <FieldError msg={studiesError} />}
+
+        {/* Clinical indication */}
+        <div className="space-y-1.5">
+          <Label htmlFor="img_indication">
+            Indicación clínica <span className="text-red-500">*</span>
+          </Label>
+          <textarea
+            id="img_indication"
+            value={state.clinical_indication}
+            onChange={(e) => onChange({ ...state, clinical_indication: e.target.value })}
+            rows={3}
+            maxLength={2000}
+            placeholder="Diagnóstico o motivo clínico que justifica los estudios…"
+            className={textareaClass(!!err('content.clinical_indication'))}
+          />
+          <FieldError msg={err('content.clinical_indication')} />
+        </div>
+
+        {/* Urgency */}
+        <div className="flex items-center gap-2">
+          <Label htmlFor="img_urgency">Urgencia</Label>
+          <select
+            id="img_urgency"
+            value={state.urgency}
+            onChange={(e) =>
+              onChange({ ...state, urgency: e.target.value as ImagingOrderState['urgency'] })
+            }
+            className={fieldClass()}
+          >
+            <option value="routine">Rutina</option>
+            <option value="urgent">Urgente</option>
+          </select>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── InterconsultationFields ──────────────────────────────────────────────────
+
+function InterconsultationFields({
+  state,
+  onChange,
+  err,
+}: {
+  state: InterconsultationState;
+  onChange: (next: InterconsultationState) => void;
+  err: (key: string) => string | undefined;
+}) {
+  const isCustom = state.specialty === '__custom__';
+
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+      <h2 className="mb-4 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+        Interconsulta
+      </h2>
+      <div className="space-y-4">
+
+        {/* Specialty + doctor */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="ic_specialty">
+              Especialidad <span className="text-red-500">*</span>
+            </Label>
+            <select
+              id="ic_specialty"
+              value={state.specialty}
+              onChange={(e) => onChange({ ...state, specialty: e.target.value })}
+              className={fieldClass(!!err('content.specialty'))}
+            >
+              <option value="">Seleccionar…</option>
+              {FREQUENT_SPECIALTIES.map((sp) => (
+                <option key={sp} value={sp}>{sp}</option>
+              ))}
+              <option value="__custom__">Otra especialidad…</option>
+            </select>
+            <FieldError msg={err('content.specialty')} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ic_doctor">Médico (opcional)</Label>
+            <input
+              id="ic_doctor"
+              type="text"
+              value={state.doctor_name}
+              onChange={(e) => onChange({ ...state, doctor_name: e.target.value })}
+              maxLength={255}
+              placeholder="Ej: Dr. Juan Rodríguez"
+              className={fieldClass()}
+            />
+          </div>
+        </div>
+
+        {/* Custom specialty input */}
+        {isCustom && (
+          <div className="space-y-1.5">
+            <Label htmlFor="ic_specialty_custom">
+              Nombre de la especialidad <span className="text-red-500">*</span>
+            </Label>
+            <input
+              id="ic_specialty_custom"
+              type="text"
+              value={state.specialtyCustom}
+              onChange={(e) => onChange({ ...state, specialtyCustom: e.target.value })}
+              maxLength={255}
+              placeholder="Ej: Reumatología"
+              className={fieldClass(!!err('content.specialty'))}
+            />
+            <FieldError msg={err('content.specialty')} />
+          </div>
+        )}
+
+        {/* Reason */}
+        <div className="space-y-1.5">
+          <Label htmlFor="ic_reason">
+            Motivo de la interconsulta <span className="text-red-500">*</span>
+          </Label>
+          <textarea
+            id="ic_reason"
+            value={state.reason}
+            onChange={(e) => onChange({ ...state, reason: e.target.value })}
+            rows={3}
+            maxLength={2000}
+            placeholder="Describir el motivo por el que se solicita la interconsulta…"
+            className={textareaClass(!!err('content.reason'))}
+          />
+          <FieldError msg={err('content.reason')} />
+        </div>
+
+        {/* Clinical summary */}
+        <div className="space-y-1.5">
+          <Label htmlFor="ic_summary">
+            Resumen clínico <span className="text-red-500">*</span>
+          </Label>
+          <textarea
+            id="ic_summary"
+            value={state.clinical_summary}
+            onChange={(e) => onChange({ ...state, clinical_summary: e.target.value })}
+            rows={5}
+            maxLength={8000}
+            placeholder="Antecedentes relevantes, diagnóstico actual, hallazgos, estudios previos…"
+            className={textareaClass(!!err('content.clinical_summary'))}
+          />
+          <FieldError msg={err('content.clinical_summary')} />
+        </div>
+
+        {/* Current medications */}
+        <div className="space-y-1.5">
+          <Label htmlFor="ic_meds">Medicamentos actuales</Label>
+          <textarea
+            id="ic_meds"
+            value={state.current_medications}
+            onChange={(e) => onChange({ ...state, current_medications: e.target.value })}
+            rows={3}
+            maxLength={4000}
+            placeholder="Listar medicamentos, dosis y frecuencia actuales…"
+            className={textareaClass()}
+          />
+        </div>
+
+        {/* Urgency */}
+        <div className="flex items-center gap-2">
+          <Label htmlFor="ic_urgency">Urgencia</Label>
+          <select
+            id="ic_urgency"
+            value={state.urgency}
+            onChange={(e) =>
+              onChange({
+                ...state,
+                urgency: e.target.value as InterconsultationState['urgency'],
+              })
+            }
+            className={fieldClass()}
+          >
+            <option value="routine">Rutina</option>
+            <option value="priority">Prioritario</option>
+            <option value="urgent">Urgente</option>
+          </select>
+        </div>
+
+        {/* Questions for specialist */}
+        <div className="space-y-1.5">
+          <Label htmlFor="ic_questions">Preguntas para el especialista</Label>
+          <textarea
+            id="ic_questions"
+            value={state.questions_for_specialist}
+            onChange={(e) =>
+              onChange({ ...state, questions_for_specialist: e.target.value })
+            }
+            rows={3}
+            maxLength={4000}
+            placeholder="¿Qué aspectos específicos se solicita evaluar o responder?…"
+            className={textareaClass()}
+          />
+        </div>
       </div>
     </section>
   );

@@ -4,6 +4,10 @@ import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import { getSession } from '@/lib/auth/session';
 import { getPatientById } from '@/queries/patients';
 import { getMedicalHistory } from '@/queries/medical-history';
+import {
+  getLatestClinicalNotePrefill,
+  type ClinicalNotePrefill,
+} from '@/queries/clinical-notes';
 import { getUserById } from '@/queries/users';
 import { getClinicSettings } from '@/queries/clinic';
 import { ClinicalDocumentForm } from '@/components/clinical-documents/clinical-document-form';
@@ -20,6 +24,31 @@ interface PageProps {
 
 function isClinicalDocumentType(v: string | undefined): v is ClinicalDocumentType {
   return !!v && (CLINICAL_DOCUMENT_TYPES as readonly string[]).includes(v);
+}
+
+// Assembles plain-text prefill from a clinical note. Only includes sections
+// where data is present. Never invents content.
+function buildClinicalSummaryPrefill(prefill: ClinicalNotePrefill | null): string {
+  if (!prefill) return '';
+  const parts: string[] = [];
+
+  if (prefill.diagnoses.length > 0) {
+    const diagText = prefill.diagnoses
+      .map((d) => (d.code ? `[${d.code}] ${d.text}` : d.text))
+      .join(', ');
+    parts.push(`Diagnósticos: ${diagText}`);
+  }
+  if (prefill.chiefComplaint?.trim()) {
+    parts.push(`Motivo de consulta: ${prefill.chiefComplaint.trim()}`);
+  }
+  if (prefill.assessment?.trim()) {
+    parts.push(`Evaluación: ${prefill.assessment.trim()}`);
+  }
+  if (prefill.plan?.trim()) {
+    parts.push(`Plan: ${prefill.plan.trim()}`);
+  }
+
+  return parts.join('\n\n');
 }
 
 export default async function NewClinicalDocumentPage({ params, searchParams }: PageProps) {
@@ -40,18 +69,21 @@ export default async function NewClinicalDocumentPage({ params, searchParams }: 
   ]);
   if (!patient) notFound();
 
-  const medicalHistory = await getMedicalHistory(patient.id);
-  const allergies = medicalHistory?.allergies?.trim() || null;
+  // Extract URL params before the second parallel fetch so clinicalNoteId can
+  // be forwarded to the prefill query.
+  const rawType = typeof search.type === 'string' ? search.type : undefined;
+  const initialType = isClinicalDocumentType(rawType) ? rawType : undefined;
+  const rawNote = search.clinical_note_id;
+  const clinicalNoteId = typeof rawNote === 'string' ? rawNote : null;
 
   const todayStr = todayInTz(clinicSettings.timezone);
 
-  // Optional ?type= deep link from "documentar consulta" or similar entry points.
-  const rawType = typeof search.type === 'string' ? search.type : undefined;
-  const initialType = isClinicalDocumentType(rawType) ? rawType : undefined;
-
-  // Optional ?clinical_note_id= so a document can be tied back to a consult.
-  const rawNote = search.clinical_note_id;
-  const clinicalNoteId = typeof rawNote === 'string' ? rawNote : null;
+  const [medicalHistory, latestNotePrefill] = await Promise.all([
+    getMedicalHistory(patient.id),
+    getLatestClinicalNotePrefill(session.clinicId, patient.id, clinicalNoteId),
+  ]);
+  const allergies = medicalHistory?.allergies?.trim() || null;
+  const prefillClinicalSummary = buildClinicalSummaryPrefill(latestNotePrefill);
 
   return (
     <div className="p-6 lg:p-8">
@@ -92,6 +124,8 @@ export default async function NewClinicalDocumentPage({ params, searchParams }: 
         todayStr={todayStr}
         initialType={initialType}
         clinicalNoteId={clinicalNoteId}
+        prefillCurrentMedications={medicalHistory?.currentMedications ?? null}
+        prefillClinicalSummary={prefillClinicalSummary || null}
       />
     </div>
   );

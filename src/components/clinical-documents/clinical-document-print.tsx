@@ -10,6 +10,9 @@ import {
   type ReferralContent,
   type PrescriptionContent,
   type PatientInstructionsContent,
+  type LabOrderContent,
+  type ImagingOrderContent,
+  type InterconsultationContent,
 } from '@/lib/validators/clinical-document';
 
 interface ClinicalDocumentPrintProps {
@@ -188,6 +191,14 @@ function DocumentBody({ document }: { document: ClinicalDocumentDetail }) {
           content={document.content as PatientInstructionsContent}
         />
       );
+    case 'lab_order':
+      return <LabOrderBody content={document.content as LabOrderContent} />;
+    case 'imaging_order':
+      return <ImagingOrderBody content={document.content as ImagingOrderContent} />;
+    case 'interconsultation':
+      return (
+        <InterconsultationBody content={document.content as InterconsultationContent} />
+      );
   }
 }
 
@@ -277,4 +288,145 @@ function PrescriptionBody({ content }: { content: PrescriptionContent }) {
 
 function PatientInstructionsBody({ content }: { content: PatientInstructionsContent }) {
   return <p className="whitespace-pre-wrap">{content.instructions}</p>;
+}
+
+const URGENCY_LABELS: Record<string, string> = {
+  routine: 'Rutina',
+  urgent: 'URGENTE',
+  priority: 'PRIORITARIO',
+};
+
+function UrgencyBadge({ urgency }: { urgency: string }) {
+  const isUrgent = urgency === 'urgent';
+  const isPriority = urgency === 'priority';
+  if (urgency === 'routine') return null;
+  return (
+    <span
+      className={[
+        'inline-block rounded border px-2 py-0.5 text-xs font-bold uppercase tracking-wide',
+        isUrgent
+          ? 'border-red-600 text-red-700'
+          : isPriority
+            ? 'border-orange-500 text-orange-700'
+            : 'border-zinc-400 text-zinc-600',
+      ].join(' ')}
+    >
+      {URGENCY_LABELS[urgency] ?? urgency}
+    </span>
+  );
+}
+
+function LabOrderBody({ content }: { content: LabOrderContent }) {
+  return (
+    <>
+      <div className="mb-1 flex items-center gap-3">
+        <UrgencyBadge urgency={content.urgency} />
+        {content.fasting_required && (
+          <span className="inline-block rounded border border-amber-500 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-amber-700">
+            Requiere ayuno
+          </span>
+        )}
+      </div>
+
+      <div className="mt-3">
+        <p className="font-semibold">Indicación clínica:</p>
+        <p className="whitespace-pre-wrap">{content.clinical_indication}</p>
+      </div>
+
+      <div className="mt-4">
+        <p className="font-semibold">Estudios solicitados:</p>
+        <ol className="mt-1 space-y-1 pl-5" style={{ listStyleType: 'decimal' }}>
+          {content.studies.map((s, i) => (
+            <li key={i}>
+              <span className="font-medium">{s.name}</span>
+              {s.notes && (
+                <span className="ml-2 text-zinc-600 italic">— {s.notes}</span>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {content.additional_instructions && (
+        <div className="mt-4">
+          <p className="font-semibold">Instrucciones adicionales:</p>
+          <p className="whitespace-pre-wrap">{content.additional_instructions}</p>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ImagingOrderBody({ content }: { content: ImagingOrderContent }) {
+  return (
+    <>
+      <div className="mb-1">
+        <UrgencyBadge urgency={content.urgency} />
+      </div>
+
+      <div className="mt-3">
+        <p className="font-semibold">Indicación clínica:</p>
+        <p className="whitespace-pre-wrap">{content.clinical_indication}</p>
+      </div>
+
+      <div className="mt-4">
+        <p className="font-semibold">Estudios solicitados:</p>
+        <ol className="mt-1 space-y-1 pl-5" style={{ listStyleType: 'decimal' }}>
+          {content.studies.map((s, i) => (
+            <li key={i}>
+              <span className="font-medium">{s.name}</span>
+              {s.notes && (
+                <span className="ml-2 text-zinc-600 italic">— {s.notes}</span>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </>
+  );
+}
+
+function InterconsultationBody({ content }: { content: InterconsultationContent }) {
+  return (
+    <>
+      <div className="mb-2 flex items-center gap-3">
+        <UrgencyBadge urgency={content.urgency} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-8 gap-y-1">
+        <p>
+          <span className="font-semibold">Especialidad:</span> {content.specialty}
+        </p>
+        {content.doctor_name && (
+          <p>
+            <span className="font-semibold">Médico:</span> {content.doctor_name}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-4">
+        <p className="font-semibold">Motivo de la interconsulta:</p>
+        <p className="whitespace-pre-wrap">{content.reason}</p>
+      </div>
+
+      <div className="mt-4">
+        <p className="font-semibold">Resumen clínico:</p>
+        <p className="whitespace-pre-wrap">{content.clinical_summary}</p>
+      </div>
+
+      {content.current_medications && (
+        <div className="mt-4">
+          <p className="font-semibold">Medicamentos actuales:</p>
+          <p className="whitespace-pre-wrap">{content.current_medications}</p>
+        </div>
+      )}
+
+      {content.questions_for_specialist && (
+        <div className="mt-4">
+          <p className="font-semibold">Preguntas para el especialista:</p>
+          <p className="whitespace-pre-wrap">{content.questions_for_specialist}</p>
+        </div>
+      )}
+    </>
+  );
 }
