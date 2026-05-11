@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne, or } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { attachments, clinicalNotes, patients, users } from '@/lib/db/schema';
 import type { AttachmentCategory } from '@/lib/validators/attachment';
@@ -82,7 +82,16 @@ function toListItem(r: Row): AttachmentListItem {
 export async function getAttachmentsByPatient(
   clinicId: string,
   patientId: string,
+  options: { includeClinicalAttachments?: boolean } = {},
 ): Promise<AttachmentListItem[]> {
+  const includeClinicalAttachments = options.includeClinicalAttachments ?? true;
+  const visibilityFilter = includeClinicalAttachments
+    ? undefined
+    : and(
+        isNull(attachments.clinicalNoteId),
+        or(isNull(attachments.category), ne(attachments.category, 'ultrasound')),
+      );
+
   // LEFT JOIN clinical_notes so general (non-note) attachments still surface;
   // when the attachment is linked to a note, `clinicalNoteIsSigned` carries
   // the lock state used by the delete guard.
@@ -92,7 +101,13 @@ export async function getAttachmentsByPatient(
     .innerJoin(patients, eq(attachments.patientId, patients.id))
     .innerJoin(users, eq(attachments.uploadedBy, users.id))
     .leftJoin(clinicalNotes, eq(attachments.clinicalNoteId, clinicalNotes.id))
-    .where(and(eq(attachments.patientId, patientId), eq(patients.clinicId, clinicId)))
+    .where(
+      and(
+        eq(attachments.patientId, patientId),
+        eq(patients.clinicId, clinicId),
+        visibilityFilter,
+      ),
+    )
     .orderBy(desc(attachments.uploadedAt));
 
   return rows.map((r) => toListItem(r as Row));

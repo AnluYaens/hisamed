@@ -6,8 +6,8 @@ import { FileText, Image as ImageIcon, Loader2, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   ALLOWED_ATTACHMENT_MIME,
-  MAX_ATTACHMENT_BYTES,
   attachmentCategoryValues,
+  maxBytesForMime,
   type AttachmentCategory,
 } from '@/lib/validators/attachment';
 
@@ -25,6 +25,7 @@ const CATEGORY_LABELS: Record<AttachmentCategory, string> = {
   consent: 'Consentimiento',
   prescription: 'Récipe',
   procedure_photo: 'Foto de procedimiento',
+  ultrasound: 'Ecografía',
   other: 'Otro',
 };
 
@@ -40,9 +41,15 @@ function formatBytes(n: number): string {
 // for a nicer error before we spend bandwidth.
 function validateFile(file: File): string | null {
   if (file.size === 0) return 'El archivo está vacío';
-  if (file.size > MAX_ATTACHMENT_BYTES) return 'El archivo excede el tamaño máximo de 10MB';
   const mime = file.type?.toLowerCase() ?? '';
-  if (!ALLOWED_ATTACHMENT_MIME[mime]) return 'Tipo de archivo no permitido. Solo PDF, JPG o PNG.';
+  if (!ALLOWED_ATTACHMENT_MIME[mime]) {
+    return 'Tipo de archivo no permitido. Solo PDF, JPG, PNG, MP4 o MOV.';
+  }
+  const limit = maxBytesForMime(mime);
+  if (file.size > limit) {
+    const mb = Math.round(limit / (1024 * 1024));
+    return `El archivo excede el tamaño máximo de ${mb}MB`;
+  }
   return null;
 }
 
@@ -59,6 +66,9 @@ export function AttachmentUploader({
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const categoryOptions = clinicalNoteId
+    ? attachmentCategoryValues
+    : attachmentCategoryValues.filter((c) => c !== 'ultrasound');
 
   function selectFile(nextFile: File | null) {
     setError(null);
@@ -181,7 +191,7 @@ export function AttachmentUploader({
             Arrastra un archivo o haz clic para seleccionar
           </span>
           <span className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            PDF, JPG o PNG · máximo 10MB
+            PDF, JPG, PNG · máximo 10MB. MP4/MOV · máximo 50MB
           </span>
           <input
             ref={inputRef}
@@ -244,7 +254,7 @@ export function AttachmentUploader({
                 disabled={isUploading}
                 className="w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
               >
-                {attachmentCategoryValues.map((c) => (
+                {categoryOptions.map((c) => (
                   <option key={c} value={c}>
                     {CATEGORY_LABELS[c]}
                   </option>

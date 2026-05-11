@@ -18,6 +18,7 @@ const CATEGORY_LABELS: Record<AttachmentCategory, string> = {
   consent: 'Consentimiento',
   prescription: 'Récipe',
   procedure_photo: 'Foto procedimiento',
+  ultrasound: 'Ecografía',
   other: 'Otro',
 };
 
@@ -29,6 +30,8 @@ const CATEGORY_STYLES: Record<AttachmentCategory, string> = {
   prescription: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
   procedure_photo:
     'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
+  ultrasound:
+    'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300',
   other: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
 };
 

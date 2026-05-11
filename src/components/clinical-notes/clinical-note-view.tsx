@@ -1,11 +1,15 @@
-import { CalendarDays, Lock, ShieldAlert, User } from 'lucide-react';
+import { CalendarDays, Film, Lock, ShieldAlert, User } from 'lucide-react';
 import { ClinicalNoteStatusBadge } from '@/components/clinical-notes/status-badge';
 import type { ClinicalNoteDetail } from '@/queries/clinical-notes';
 import type {
   GynecologicalExam,
+  ObstetricUltrasound,
+  OvaryUltrasound,
   ProcedureEntry,
   ProcedureType,
+  Ultrasound,
 } from '@/lib/validators/clinical-note';
+import { isVideoMime } from '@/lib/validators/attachment';
 import {
   ADNEXA_LABELS,
   CERVIX_LABELS,
@@ -20,6 +24,22 @@ import {
   VAGINA_LABELS,
   VULVA_LABELS,
 } from '@/components/clinical-notes/gynecological-exam-section';
+import {
+  BLADDER_US_LABELS,
+  DOUGLAS_FLUID_LABELS,
+  ENDOMETRIUM_PATTERN_LABELS,
+  FETAL_COUNT_LABELS,
+  FETAL_PRESENTATION_LABELS,
+  PLACENTA_GRADE_LABELS,
+  PLACENTA_LOCATION_LABELS,
+  UTERUS_US_POSITION_LABELS,
+} from '@/components/clinical-notes/ultrasound-section';
+
+interface UltrasoundAttachmentMeta {
+  id: string;
+  fileName: string;
+  fileType: string;
+}
 
 interface ClinicalNoteViewProps {
   note: ClinicalNoteDetail;
@@ -36,6 +56,13 @@ interface ClinicalNoteViewProps {
    * inline with the procedure entries.
    */
   procedurePhotos?: Record<string, { id: string; fileName: string }>;
+  /**
+   * Ultrasound attachments (images + short videos) tied to this note. The
+   * id-only references live in `specialty_data.ultrasound.image_attachment_ids`;
+   * the read view needs filename/fileType so it can render the right tag
+   * (img vs video) and label.
+   */
+  ultrasoundAttachments?: UltrasoundAttachmentMeta[];
 }
 
 function formatDate(dateStr: string): string {
@@ -338,6 +365,340 @@ function GynecologicalExamReadOnly({
   );
 }
 
+// ─── Ultrasound read view ────────────────────────────────────────────────────
+
+function ultrasoundHasContent(
+  u: Ultrasound | null | undefined,
+  attachmentCount: number,
+): boolean {
+  if (!u && attachmentCount === 0) return false;
+  if (attachmentCount > 0) return true;
+  if (!u) return false;
+  const check = (o: unknown): boolean => {
+    if (o == null || o === '') return false;
+    if (typeof o !== 'object') return true;
+    return Object.values(o as Record<string, unknown>).some(check);
+  };
+  return check(u.gynecological) || check(u.obstetric);
+}
+
+function ovaryHasContent(o: OvaryUltrasound | null | undefined): boolean {
+  if (!o) return false;
+  return (
+    o.length_mm != null ||
+    o.width_mm != null ||
+    o.ap_mm != null ||
+    o.volume_ml != null ||
+    o.follicle_count != null ||
+    o.dominant_follicle_mm != null ||
+    Boolean(o.findings)
+  );
+}
+
+function OvaryReadOnly({
+  label,
+  ovary,
+}: {
+  label: string;
+  ovary: OvaryUltrasound | undefined;
+}) {
+  if (!ovaryHasContent(ovary)) return null;
+  const o = ovary as OvaryUltrasound;
+  const dims = [o.length_mm, o.width_mm, o.ap_mm]
+    .filter((v) => v != null)
+    .map((v) => `${v}`)
+    .join(' × ');
+  return (
+    <div>
+      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        {label}
+      </p>
+      <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+        {dims && <FindingRow label="Dimensiones (mm)" value={dims} note={null} />}
+        {o.volume_ml != null && (
+          <FindingRow label="Volumen" value={`${o.volume_ml.toFixed(2)} ml`} note={null} />
+        )}
+        {o.follicle_count != null && (
+          <FindingRow label="Folículos (n)" value={String(o.follicle_count)} note={null} />
+        )}
+        {o.dominant_follicle_mm != null && (
+          <FindingRow
+            label="Folículo dominante"
+            value={`${o.dominant_follicle_mm} mm`}
+            note={null}
+          />
+        )}
+        {o.findings && <FindingRow label="Hallazgos" value={null} note={o.findings} />}
+      </div>
+    </div>
+  );
+}
+
+function obstetricHasContent(o: ObstetricUltrasound | null | undefined): boolean {
+  if (!o) return false;
+  return (
+    o.fetal_count != null ||
+    o.presentation != null ||
+    o.fetal_heart_rate != null ||
+    Boolean(
+      o.biometry &&
+        (o.biometry.bpd_mm != null ||
+          o.biometry.hc_mm != null ||
+          o.biometry.ac_mm != null ||
+          o.biometry.fl_mm != null ||
+          o.biometry.estimated_weight_g != null ||
+          o.biometry.estimated_ga_weeks != null),
+    ) ||
+    Boolean(
+      o.amniotic_fluid && (o.amniotic_fluid.afi_cm != null || o.amniotic_fluid.sdp_cm != null),
+    ) ||
+    Boolean(o.placenta && (o.placenta.location != null || o.placenta.grade != null)) ||
+    Boolean(o.findings)
+  );
+}
+
+function UltrasoundImageThumb({
+  attachment,
+}: {
+  attachment: UltrasoundAttachmentMeta;
+}) {
+  const isVideo = isVideoMime(attachment.fileType);
+  return (
+    <figure className="space-y-1">
+      <a
+        href={`/api/attachments/${attachment.id}/download`}
+        target="_blank"
+        rel="noreferrer"
+        className="block overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-700"
+      >
+        {isVideo ? (
+          // Native <video> with the source pointed at the download endpoint.
+          // `preload="metadata"` keeps page load light — the browser only
+          // pulls the first chunk to render the poster, full bytes stream on
+          // play.
+          // eslint-disable-next-line jsx-a11y/media-has-caption
+          <video
+            src={`/api/attachments/${attachment.id}/download`}
+            controls
+            preload="metadata"
+            className="h-40 w-full bg-black object-contain"
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/api/attachments/${attachment.id}/download`}
+            alt={attachment.fileName}
+            className="h-40 w-full object-cover"
+          />
+        )}
+      </a>
+      <figcaption className="flex items-center gap-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
+        {isVideo && <Film className="h-3 w-3 shrink-0" />}
+        <span className="truncate" title={attachment.fileName}>
+          {attachment.fileName}
+        </span>
+      </figcaption>
+    </figure>
+  );
+}
+
+function UltrasoundReadOnly({
+  ultrasound,
+  attachments,
+}: {
+  ultrasound: Ultrasound | null | undefined;
+  attachments: UltrasoundAttachmentMeta[];
+}) {
+  const gyn = ultrasound?.gynecological;
+  const obs = ultrasound?.obstetric;
+  const uterus = gyn?.uterus;
+  const bladder = gyn?.bladder;
+  const biometry = obs?.biometry;
+  const amniotic = obs?.amniotic_fluid;
+  const placenta = obs?.placenta;
+
+  const uterusDims = [uterus?.length_mm, uterus?.ap_mm, uterus?.transverse_mm]
+    .filter((v) => v != null)
+    .map((v) => `${v}`)
+    .join(' × ');
+  const hasUterus =
+    Boolean(uterus) &&
+    (uterus?.position != null ||
+      uterusDims !== '' ||
+      uterus?.endometrium_thickness_mm != null ||
+      uterus?.endometrium_pattern != null ||
+      Boolean(uterus?.findings));
+
+  return (
+    <div className="space-y-5">
+      {/* Gynecological */}
+      {(hasUterus ||
+        ovaryHasContent(gyn?.right_ovary) ||
+        ovaryHasContent(gyn?.left_ovary) ||
+        bladder?.value ||
+        bladder?.note ||
+        gyn?.douglas_fluid) && (
+        <div className="space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Ecografía ginecológica
+          </p>
+          {hasUterus && (
+            <div>
+              <p className="mb-1 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                Útero
+              </p>
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {uterus?.position && (
+                  <FindingRow
+                    label="Posición"
+                    value={UTERUS_US_POSITION_LABELS[uterus.position]}
+                    note={null}
+                  />
+                )}
+                {uterusDims && (
+                  <FindingRow label="Dimensiones (mm)" value={uterusDims} note={null} />
+                )}
+                {uterus?.endometrium_thickness_mm != null && (
+                  <FindingRow
+                    label="Endometrio"
+                    value={`${uterus.endometrium_thickness_mm} mm`}
+                    note={null}
+                  />
+                )}
+                {uterus?.endometrium_pattern && (
+                  <FindingRow
+                    label="Patrón endometrial"
+                    value={ENDOMETRIUM_PATTERN_LABELS[uterus.endometrium_pattern]}
+                    note={null}
+                  />
+                )}
+                {uterus?.findings && (
+                  <FindingRow label="Hallazgos" value={null} note={uterus.findings} />
+                )}
+              </div>
+            </div>
+          )}
+          <OvaryReadOnly label="Ovario derecho" ovary={gyn?.right_ovary} />
+          <OvaryReadOnly label="Ovario izquierdo" ovary={gyn?.left_ovary} />
+          {(bladder?.value || bladder?.note) && (
+            <FindingRow
+              label="Vejiga"
+              value={bladder?.value ? BLADDER_US_LABELS[bladder.value] : null}
+              note={bladder?.note}
+            />
+          )}
+          {gyn?.douglas_fluid && (
+            <FindingRow
+              label="Líquido libre en Douglas"
+              value={DOUGLAS_FLUID_LABELS[gyn.douglas_fluid]}
+              note={null}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Obstetric */}
+      {obstetricHasContent(obs) && (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Ecografía obstétrica
+          </p>
+          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            {obs?.fetal_count && (
+              <FindingRow
+                label="Número de fetos"
+                value={FETAL_COUNT_LABELS[obs.fetal_count]}
+                note={null}
+              />
+            )}
+            {obs?.presentation && (
+              <FindingRow
+                label="Presentación"
+                value={FETAL_PRESENTATION_LABELS[obs.presentation]}
+                note={null}
+              />
+            )}
+            {obs?.fetal_heart_rate != null && (
+              <FindingRow
+                label="FCF"
+                value={`${obs.fetal_heart_rate} lpm`}
+                note={null}
+              />
+            )}
+            {biometry?.bpd_mm != null && (
+              <FindingRow label="DBP" value={`${biometry.bpd_mm} mm`} note={null} />
+            )}
+            {biometry?.hc_mm != null && (
+              <FindingRow label="CC" value={`${biometry.hc_mm} mm`} note={null} />
+            )}
+            {biometry?.ac_mm != null && (
+              <FindingRow label="CA" value={`${biometry.ac_mm} mm`} note={null} />
+            )}
+            {biometry?.fl_mm != null && (
+              <FindingRow label="LF" value={`${biometry.fl_mm} mm`} note={null} />
+            )}
+            {biometry?.estimated_weight_g != null && (
+              <FindingRow
+                label="Peso estimado (Hadlock)"
+                value={`${biometry.estimated_weight_g} g`}
+                note={null}
+              />
+            )}
+            {biometry?.estimated_ga_weeks != null && (
+              <FindingRow
+                label="EG por biometría"
+                value={`${biometry.estimated_ga_weeks.toFixed(1)} sem`}
+                note={null}
+              />
+            )}
+            {amniotic?.afi_cm != null && (
+              <FindingRow label="ILA" value={`${amniotic.afi_cm} cm`} note={null} />
+            )}
+            {amniotic?.sdp_cm != null && (
+              <FindingRow
+                label="Bolsillo mayor"
+                value={`${amniotic.sdp_cm} cm`}
+                note={null}
+              />
+            )}
+            {placenta?.location && (
+              <FindingRow
+                label="Placenta · localización"
+                value={PLACENTA_LOCATION_LABELS[placenta.location]}
+                note={null}
+              />
+            )}
+            {placenta?.grade && (
+              <FindingRow
+                label="Placenta · grado"
+                value={PLACENTA_GRADE_LABELS[placenta.grade]}
+                note={null}
+              />
+            )}
+            {obs?.findings && (
+              <FindingRow label="Hallazgos adicionales" value={null} note={obs.findings} />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Image / video gallery */}
+      {attachments.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Imágenes del eco
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {attachments.map((a) => (
+              <UltrasoundImageThumb key={a.id} attachment={a} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SpecialtyRow({
   label,
   value,
@@ -365,9 +726,12 @@ export function ClinicalNoteView({
   note,
   canViewInternalNotes,
   procedurePhotos = {},
+  ultrasoundAttachments = [],
 }: ClinicalNoteViewProps) {
   const sp = note.specialtyData;
   const exam = sp?.gynecological_exam;
+  const ultrasound = sp?.ultrasound;
+  const showUltrasound = ultrasoundHasContent(ultrasound, ultrasoundAttachments.length);
 
   return (
     <div className="space-y-5">
@@ -499,6 +863,16 @@ export function ClinicalNoteView({
       {hasAnyExamData(exam) && (
         <SectionCard title="Examen ginecológico">
           <GynecologicalExamReadOnly exam={exam} attachments={procedurePhotos} />
+        </SectionCard>
+      )}
+
+      {/* Ecografía estructurada + galería de imágenes/videos */}
+      {showUltrasound && (
+        <SectionCard title="Ecografía">
+          <UltrasoundReadOnly
+            ultrasound={ultrasound}
+            attachments={ultrasoundAttachments}
+          />
         </SectionCard>
       )}
 

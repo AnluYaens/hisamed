@@ -64,6 +64,8 @@ export async function GET(
       fileName: attachments.fileName,
       fileType: attachments.fileType,
       patientId: attachments.patientId,
+      clinicalNoteId: attachments.clinicalNoteId,
+      category: attachments.category,
     })
     .from(attachments)
     .innerJoin(patients, eq(attachments.patientId, patients.id))
@@ -78,6 +80,17 @@ export async function GET(
   }
 
   const att = rows[0];
+
+  // Receptionists can work with patient-level administrative attachments, but
+  // clinical-note evidence and ultrasound captures follow the same read policy
+  // as the note itself: admin/doctor only. Return 404 to avoid confirming that
+  // a protected clinical media id exists.
+  if (session.role === 'receptionist' && (att.clinicalNoteId || att.category === 'ultrasound')) {
+    return NextResponse.json(
+      { success: false, error: 'Adjunto no encontrado' },
+      { status: 404 },
+    );
+  }
 
   await safeAuditLog({
     clinicId: session.clinicId,

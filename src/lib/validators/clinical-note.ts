@@ -122,6 +122,154 @@ export const gynecologicalExamSchema = z
 
 export type GynecologicalExam = z.infer<typeof gynecologicalExamSchema>;
 
+// ─── Ecografía (subsección de specialty_data) ─────────────────────────────────
+// El ginecólogo registra los hallazgos del eco transvaginal/pélvico (siempre)
+// y del eco obstétrico (cuando hay embarazo activo). Las imágenes/videos del
+// ecógrafo se cargan como attachments con `category = 'ultrasound'` y aquí
+// guardamos solo los UUID — así el inline gallery puede renderizarlos sin
+// duplicar metadatos.
+
+export const uterusUltrasoundPositionValues = [
+  'avf',
+  'rvf',
+  'lateral',
+  'no_visualizado',
+] as const;
+
+export const endometriumPatternValues = [
+  'trilaminar',
+  'homogeneo',
+  'heterogeneo',
+  'no_evaluable',
+] as const;
+
+export const bladderUltrasoundValues = ['normal', 'distendida', 'con_contenido'] as const;
+
+export const douglasFluidValues = ['ausente', 'escaso', 'moderado', 'abundante'] as const;
+
+export const fetalCountValues = ['1', '2', '3+'] as const;
+
+export const fetalPresentationValues = [
+  'cefalica',
+  'podalica',
+  'transversa',
+  'no_aplica',
+] as const;
+
+export const placentaLocationValues = [
+  'anterior',
+  'posterior',
+  'fundica',
+  'previa',
+] as const;
+
+// Grados de Grannum (madurez placentaria). Romanos para coincidir con la
+// notación que usa el doctor en la clínica.
+export const placentaGradeValues = ['0', 'I', 'II', 'III'] as const;
+
+// Dimensiones de un ovario. Las medidas se piden en mm (lo que muestra el
+// ecógrafo); el volumen se calcula como 0.523 × L × A × AP / 1000 (mm³ → ml).
+// El cliente persiste el volumen ya calculado para no tener que recalcularlo
+// al leer la nota.
+export const ovaryUltrasoundSchema = z
+  .object({
+    length_mm: z.coerce.number().min(0).max(200).nullable().optional(),
+    width_mm: z.coerce.number().min(0).max(200).nullable().optional(),
+    ap_mm: z.coerce.number().min(0).max(200).nullable().optional(),
+    volume_ml: z.coerce.number().min(0).max(1000).nullable().optional(),
+    follicle_count: z.coerce.number().int().min(0).max(100).nullable().optional(),
+    dominant_follicle_mm: z.coerce.number().min(0).max(100).nullable().optional(),
+    findings: z.string().max(2000).nullable().optional(),
+  })
+  .partial();
+
+export type OvaryUltrasound = z.infer<typeof ovaryUltrasoundSchema>;
+
+export const gynecologicalUltrasoundSchema = z
+  .object({
+    uterus: z
+      .object({
+        position: z.enum(uterusUltrasoundPositionValues).nullable().optional(),
+        length_mm: z.coerce.number().min(0).max(300).nullable().optional(),
+        ap_mm: z.coerce.number().min(0).max(300).nullable().optional(),
+        transverse_mm: z.coerce.number().min(0).max(300).nullable().optional(),
+        endometrium_thickness_mm: z.coerce.number().min(0).max(50).nullable().optional(),
+        endometrium_pattern: z.enum(endometriumPatternValues).nullable().optional(),
+        findings: z.string().max(2000).nullable().optional(),
+      })
+      .partial()
+      .optional(),
+    right_ovary: ovaryUltrasoundSchema.optional(),
+    left_ovary: ovaryUltrasoundSchema.optional(),
+    bladder: z
+      .object({
+        value: z.enum(bladderUltrasoundValues).nullable().optional(),
+        note: z.string().max(500).nullable().optional(),
+      })
+      .partial()
+      .optional(),
+    douglas_fluid: z.enum(douglasFluidValues).nullable().optional(),
+  })
+  .partial();
+
+export type GynecologicalUltrasound = z.infer<typeof gynecologicalUltrasoundSchema>;
+
+export const obstetricUltrasoundSchema = z
+  .object({
+    fetal_count: z.enum(fetalCountValues).nullable().optional(),
+    presentation: z.enum(fetalPresentationValues).nullable().optional(),
+    fetal_heart_rate: z.coerce.number().int().min(0).max(300).nullable().optional(),
+    biometry: z
+      .object({
+        // Diámetro biparietal (BPD/DBP)
+        bpd_mm: z.coerce.number().min(0).max(200).nullable().optional(),
+        // Circunferencia cefálica (HC/CC)
+        hc_mm: z.coerce.number().min(0).max(500).nullable().optional(),
+        // Circunferencia abdominal (AC/CA)
+        ac_mm: z.coerce.number().min(0).max(500).nullable().optional(),
+        // Longitud del fémur (FL/LF)
+        fl_mm: z.coerce.number().min(0).max(200).nullable().optional(),
+        // Peso estimado calculado por Hadlock (g)
+        estimated_weight_g: z.coerce.number().min(0).max(8000).nullable().optional(),
+        // Edad gestacional por biometría en semanas decimales (ej: 24.3)
+        estimated_ga_weeks: z.coerce.number().min(0).max(45).nullable().optional(),
+      })
+      .partial()
+      .optional(),
+    amniotic_fluid: z
+      .object({
+        // Índice de líquido amniótico (cm)
+        afi_cm: z.coerce.number().min(0).max(50).nullable().optional(),
+        // Bolsillo mayor (cm) — alternativa a ILA antes de la semana 20
+        sdp_cm: z.coerce.number().min(0).max(50).nullable().optional(),
+      })
+      .partial()
+      .optional(),
+    placenta: z
+      .object({
+        location: z.enum(placentaLocationValues).nullable().optional(),
+        grade: z.enum(placentaGradeValues).nullable().optional(),
+      })
+      .partial()
+      .optional(),
+    findings: z.string().max(4000).nullable().optional(),
+  })
+  .partial();
+
+export type ObstetricUltrasound = z.infer<typeof obstetricUltrasoundSchema>;
+
+export const ultrasoundSchema = z
+  .object({
+    gynecological: gynecologicalUltrasoundSchema.optional(),
+    obstetric: obstetricUltrasoundSchema.optional(),
+    // Attachment IDs (category='ultrasound') uploaded for this consultation.
+    // The order here is the order they render in the gallery.
+    image_attachment_ids: z.array(z.string().uuid()).max(40).optional(),
+  })
+  .partial();
+
+export type Ultrasound = z.infer<typeof ultrasoundSchema>;
+
 export const clinicalNoteSpecialtyDataSchema = z.object({
   blood_pressure: z
     .string()
@@ -154,6 +302,7 @@ export const clinicalNoteSpecialtyDataSchema = z.object({
     z.string().max(2000).nullable().optional(),
   ),
   gynecological_exam: gynecologicalExamSchema.nullable().optional(),
+  ultrasound: ultrasoundSchema.nullable().optional(),
 });
 
 export type ClinicalNoteSpecialtyData = z.infer<typeof clinicalNoteSpecialtyDataSchema>;

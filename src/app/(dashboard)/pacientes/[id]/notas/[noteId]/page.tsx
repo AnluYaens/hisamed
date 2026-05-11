@@ -131,6 +131,9 @@ export default async function ClinicalNoteDetailPage({ params }: PageProps) {
           }}
           todayStr={todayStr}
           appointmentId={note.appointmentId}
+          ultrasoundAttachments={noteAttachments
+            .filter((a) => a.category === 'ultrasound')
+            .map((a) => ({ id: a.id, fileName: a.fileName, fileType: a.fileType }))}
         />
       ) : (
         <ClinicalNoteView
@@ -141,6 +144,9 @@ export default async function ClinicalNoteDetailPage({ params }: PageProps) {
               .filter((a) => a.category === 'procedure_photo')
               .map((a) => [a.id, { id: a.id, fileName: a.fileName }]),
           )}
+          ultrasoundAttachments={noteAttachments
+            .filter((a) => a.category === 'ultrasound')
+            .map((a) => ({ id: a.id, fileName: a.fileName, fileType: a.fileType }))}
         />
       )}
 

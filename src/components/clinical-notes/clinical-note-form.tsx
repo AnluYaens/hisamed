@@ -22,10 +22,15 @@ import type {
   ClinicalNoteSpecialtyData,
   DiagnosisEntry,
   GynecologicalExam,
+  Ultrasound,
 } from '@/lib/validators/clinical-note';
 import { bloodPressureRegex } from '@/lib/validators/clinical-note';
 import { DiagnosisListEditor } from '@/components/ui/diagnosis-list-editor';
 import { GynecologicalExamSection } from '@/components/clinical-notes/gynecological-exam-section';
+import {
+  UltrasoundSection,
+  type AttachmentMeta as UltrasoundAttachmentMeta,
+} from '@/components/clinical-notes/ultrasound-section';
 import { consultationReasonPhrases } from '@/lib/constants/medical-phrases';
 
 // ─── Shared input classes ─────────────────────────────────────────────────────
@@ -94,6 +99,9 @@ type SpecialtyState = {
   // (no string-flattening) since selects + checkboxes consume the typed
   // shape directly. Empty/cleared = `{}`.
   gynecological_exam: GynecologicalExam;
+  // Same approach for the ultrasound blob. The form mutates the typed
+  // value directly via `UltrasoundSection`; we only stringify on submit.
+  ultrasound: Ultrasound;
 };
 
 function emptyTextFields(defaults: Partial<TextFields> = {}): TextFields {
@@ -135,7 +143,28 @@ function buildSpecialtyState(d: ClinicalNoteSpecialtyData | null | undefined): S
     procedure_performed: d?.procedure_performed ?? '',
     treatment_protocol: d?.treatment_protocol ?? '',
     gynecological_exam: d?.gynecological_exam ?? {},
+    ultrasound: d?.ultrasound ?? {},
   };
+}
+
+// Has any meaningful (non-empty) value been entered into the ultrasound blob?
+// Used both to decide whether to persist it and (in the read view) whether to
+// render the ecography section at all.
+function ultrasoundHasContent(u: Ultrasound | undefined): boolean {
+  if (!u) return false;
+  const hasIds = (u.image_attachment_ids?.length ?? 0) > 0;
+  if (hasIds) return true;
+  const gyn = u.gynecological;
+  const obs = u.obstetric;
+  const checkObj = (o: unknown): boolean => {
+    if (o == null || typeof o !== 'object') return false;
+    return Object.values(o as Record<string, unknown>).some((v) => {
+      if (v == null || v === '') return false;
+      if (typeof v === 'object') return checkObj(v);
+      return true;
+    });
+  };
+  return checkObj(gyn) || checkObj(obs);
 }
 
 // Serialize the UI-friendly string state into the JSON payload expected by
@@ -167,6 +196,10 @@ function serializeSpecialty(s: SpecialtyState): ClinicalNoteSpecialtyData {
     // existing value on partial saves and is just noise in the audit log.
     gynecological_exam:
       Object.keys(s.gynecological_exam).length > 0 ? s.gynecological_exam : undefined,
+    // Same guard for ultrasound: a stray `{}` would shadow whatever was
+    // persisted previously, so we only send it once the doctor has actually
+    // entered something.
+    ultrasound: ultrasoundHasContent(s.ultrasound) ? s.ultrasound : undefined,
   };
   return out;
 }
@@ -198,6 +231,12 @@ interface ClinicalNoteFormProps {
   todayStr: string;
   /** Optional cita to auto-associate (e.g. when clicked from the agenda). */
   appointmentId?: string | null;
+  /**
+   * Metadata for ultrasound attachments already linked to this note (edit
+   * mode). Lets the gallery render existing thumbnails without an extra
+   * fetch — the page already loads attachments for the AttachmentList.
+   */
+  ultrasoundAttachments?: UltrasoundAttachmentMeta[];
 }
 
 export function ClinicalNoteForm({
@@ -205,6 +244,7 @@ export function ClinicalNoteForm({
   note,
   todayStr,
   appointmentId,
+  ultrasoundAttachments,
 }: ClinicalNoteFormProps) {
   const router = useRouter();
   const isEdit = note !== null;
@@ -790,6 +830,38 @@ export function ClinicalNoteForm({
             }
             patientId={patientId}
             noteId={isEdit ? note.id : null}
+            disabled={isPending}
+          />
+        </section>
+
+        {/* ── Ecografía estructurada ──────────────────────────────────────── */}
+        <section className="space-y-3">
+          <div className="px-1">
+            <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+              Ecografía
+            </h2>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500">
+              Hallazgos estructurados, imágenes y videos del ecógrafo. El
+              módulo obstétrico aparece automáticamente si la edad gestacional
+              está registrada.
+            </p>
+          </div>
+          <UltrasoundSection
+            value={specialty.ultrasound}
+            onChange={(next) =>
+              setSpecialty((prev) => ({ ...prev, ultrasound: next }))
+            }
+            patientId={patientId}
+            noteId={isEdit ? note.id : null}
+            // Obstetric section is gated on an active pregnancy. The doctor
+            // already enters EG in the consulta section above, so we use it
+            // as the single source of truth instead of asking again.
+            showObstetric={Number(specialty.gestational_age_weeks) > 0}
+            initialAttachmentsMeta={
+              ultrasoundAttachments
+                ? Object.fromEntries(ultrasoundAttachments.map((a) => [a.id, a]))
+                : {}
+            }
             disabled={isPending}
           />
         </section>

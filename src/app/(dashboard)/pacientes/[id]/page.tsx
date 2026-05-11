@@ -77,7 +77,9 @@ export default async function PatientDetailPage({ params }: PageProps) {
       : Promise.resolve([]),
     getAppointmentsByPatient(session.clinicId, patient.id),
     getClinicSettings(session.clinicId),
-    getAttachmentsByPatient(session.clinicId, patient.id),
+    getAttachmentsByPatient(session.clinicId, patient.id, {
+      includeClinicalAttachments: canViewClinical,
+    }),
     canViewClinical
       ? getClinicalDocumentsByPatient(session.clinicId, patient.id)
       : Promise.resolve([]),
