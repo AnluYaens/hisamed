@@ -8,6 +8,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { LOCAL_STORAGE_DIR } from '@/lib/config/storage';
 
 // ─── Provider selection ───────────────────────────────────────────────────────
 //
@@ -15,8 +16,8 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 //   - `r2`    → Cloudflare R2, talked to via the S3-compatible SDK
 //   - `local` → filesystem-backed, for `pnpm dev` without R2 credentials
 // STORAGE_PROVIDER picks between them. The local provider MUST NOT be used in
-// production — it writes to /tmp (or STORAGE_LOCAL_DIR if set) which is
-// per-container and ephemeral.
+// production — it writes to a fixed /tmp folder which is per-container and
+// ephemeral.
 
 export type StorageProvider = 'r2' | 'local';
 
@@ -134,10 +135,6 @@ async function getR2(key: string): Promise<StoredObject> {
 
 // ─── Local filesystem implementation ──────────────────────────────────────────
 
-function getLocalDir(): string {
-  return process.env.STORAGE_LOCAL_DIR ?? '/tmp/clinica-attachments';
-}
-
 // Reject keys that try to escape the storage root. Upload keys come from
 // generateId()+ext so this is defense in depth, but it also guards against
 // hand-crafted rows in the attachments table.
@@ -145,7 +142,7 @@ function resolveLocalPath(key: string): string {
   if (!key || key.includes('..') || key.startsWith('/') || key.includes('\x00')) {
     throw new Error('Invalid storage key');
   }
-  const base = path.resolve(getLocalDir());
+  const base = path.resolve(LOCAL_STORAGE_DIR);
   const full = path.resolve(base, key);
   if (!full.startsWith(`${base}${path.sep}`) && full !== base) {
     throw new Error('Invalid storage key');
