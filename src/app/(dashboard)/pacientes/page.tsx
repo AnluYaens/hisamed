@@ -5,6 +5,8 @@ import { UserPlus } from 'lucide-react';
 import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { getPatients } from '@/queries/patients';
+import { getClinicSettings } from '@/queries/clinic';
+import { todayInTz } from '@/lib/dates';
 import { PatientSearchBar } from '@/components/patients/patient-search-bar';
 import { PatientList } from '@/components/patients/patient-list';
 
@@ -20,7 +22,11 @@ export default async function PacientesPage({ searchParams }: PageProps) {
   const search = params.q ?? '';
   const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1);
 
-  const data = await getPatients(session.clinicId, { search, page });
+  const [data, clinicSettings] = await Promise.all([
+    getPatients(session.clinicId, { search, page, includeObstetric: session.role !== 'receptionist' }),
+    getClinicSettings(session.clinicId),
+  ]);
+  const todayStr = todayInTz(clinicSettings.timezone);
 
   return (
     <div className="p-6 lg:p-8">
@@ -56,7 +62,7 @@ export default async function PacientesPage({ searchParams }: PageProps) {
           <div className="h-64 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />
         }
       >
-        <PatientList data={data} />
+        <PatientList data={data} todayStr={todayStr} />
       </Suspense>
     </div>
   );

@@ -52,6 +52,24 @@ export const gynecologyDataSchema = z.object({
     (v) => (v === '' ? null : v),
     z.string().max(2000).nullable().optional(),
   ),
+  pregnancy_ended: z.boolean().nullable().optional(),
+  pregnancy_ended_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido (YYYY-MM-DD)')
+    .nullable()
+    .optional(),
+}).superRefine((data, ctx) => {
+  if (
+    data.pregnancy_ended_date &&
+    data.last_menstrual_period &&
+    data.pregnancy_ended_date < data.last_menstrual_period
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['pregnancy_ended_date'],
+      message: 'La fecha de fin de embarazo no puede ser anterior a la FUM',
+    });
+  }
 });
 
 export type GynecologyData = z.infer<typeof gynecologyDataSchema>;

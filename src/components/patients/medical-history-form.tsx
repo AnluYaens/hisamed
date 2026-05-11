@@ -264,6 +264,8 @@ function buildGynState(g: GynecologyData): GynecologyData {
     ectopic: g.ectopic ?? null,
     living_children: g.living_children ?? null,
     obstetric_notes: g.obstetric_notes ?? '',
+    pregnancy_ended: g.pregnancy_ended ?? null,
+    pregnancy_ended_date: g.pregnancy_ended_date ?? null,
   };
 }
 
@@ -596,6 +598,56 @@ export function MedicalHistoryForm({ patientId, history }: MedicalHistoryFormPro
               </select>
             </div>
           </div>
+
+          {/* Fin de embarazo */}
+          {gynData.last_menstrual_period && (
+            <div className="rounded-xl border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/40">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={gynData.pregnancy_ended === true}
+                  onChange={(e) =>
+                    setGynField('pregnancy_ended', e.target.checked ? true : null)
+                  }
+                  className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-pink-600"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                    Marcar fin de embarazo
+                  </span>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Registra que el embarazo actual ha concluido (parto, cesárea, pérdida)
+                  </p>
+                  {gynData.pregnancy_ended && (() => {
+                    const endDateError =
+                      gynData.pregnancy_ended_date &&
+                      gynData.last_menstrual_period &&
+                      gynData.pregnancy_ended_date < gynData.last_menstrual_period
+                        ? 'La fecha de fin de embarazo no puede ser anterior a la FUM'
+                        : null;
+                    return (
+                      <div className="mt-3 space-y-1.5">
+                        <Label htmlFor="gyn_pregnancy_ended_date">Fecha de finalización</Label>
+                        <input
+                          id="gyn_pregnancy_ended_date"
+                          type="date"
+                          value={gynData.pregnancy_ended_date ?? ''}
+                          min={gynData.last_menstrual_period ?? undefined}
+                          onChange={(e) =>
+                            setGynField('pregnancy_ended_date', e.target.value || null)
+                          }
+                          className={`${fieldClass(endDateError !== null)} max-w-xs`}
+                        />
+                        {endDateError && (
+                          <p className="text-xs text-red-600 dark:text-red-400">{endDateError}</p>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </label>
+            </div>
+          )}
 
           {/* Row 3: Pap + Mamografía */}
           <div className="grid gap-4 sm:grid-cols-2">

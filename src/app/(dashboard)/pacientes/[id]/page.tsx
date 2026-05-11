@@ -27,6 +27,8 @@ import { PartnerForm } from '@/components/patients/partner-form';
 import { PartnerAvatarUploader } from '@/components/patients/partner-avatar-uploader';
 import { safeAuditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { todayInTz } from '@/lib/dates';
+import { calcGestationalAge, getGestationalTrimester, TRIMESTER_LABELS } from '@/lib/obstetric';
+import type { GynecologyData } from '@/lib/validators/medical-history';
 
 const CLINICAL_ROLES = new Set(['admin', 'doctor']);
 
@@ -93,6 +95,60 @@ export default async function PatientDetailPage({ params }: PageProps) {
   const canCreateDocument = session.role === 'doctor';
   const canEditPatient = true;
 
+  // ── Obstetric badge ────────────────────────────────────────────────────────
+  // Only for female patients with clinical access.
+  let activePregnancy: { weeks: number; days: number; trimester: 1 | 2 | 3 } | null = null;
+  let staleFUM = false;
+  if (canViewClinical && patient.sex === 'F' && medicalHistory?.specialtyData) {
+    const gynData = medicalHistory.specialtyData as GynecologyData;
+    if (gynData.last_menstrual_period && !gynData.pregnancy_ended) {
+      const ga = calcGestationalAge(gynData.last_menstrual_period, todayStr);
+      if (ga.weeks < 42) {
+        activePregnancy = { ...ga, trimester: getGestationalTrimester(ga.weeks) };
+      } else {
+        staleFUM = true;
+      }
+    }
+  }
+
+  // ── Última visita / Próxima cita ──────────────────────────────────────────
+  const lastNote = clinicalNotes.length > 0 ? clinicalNotes[0] : null;
+  const nextAppointment = patientAppointments
+    .filter(
+      (a) =>
+        a.date >= todayStr &&
+        a.status !== 'cancelled' &&
+        a.status !== 'no_show',
+    )
+    .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null;
+
+  function daysBetween(dateA: string, dateB: string): number {
+    const a = new Date(dateA + 'T00:00:00');
+    const b = new Date(dateB + 'T00:00:00');
+    return Math.round((b.getTime() - a.getTime()) / 86_400_000);
+  }
+
+  function formatDateEs(dateStr: string) {
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  let lastVisitLabel: string | null = null;
+  if (lastNote) {
+    const diff = daysBetween(lastNote.noteDate, todayStr);
+    if (diff === 0) lastVisitLabel = `Última consulta: hoy (${formatDateEs(lastNote.noteDate)})`;
+    else if (diff === 1) lastVisitLabel = `Última consulta: ayer (${formatDateEs(lastNote.noteDate)})`;
+    else lastVisitLabel = `Última consulta: hace ${diff} día${diff !== 1 ? 's' : ''} (${formatDateEs(lastNote.noteDate)})`;
+  }
+
+  let nextApptLabel: string | null = null;
+  if (nextAppointment) {
+    const diff = daysBetween(todayStr, nextAppointment.date);
+    if (diff === 0) nextApptLabel = `Próxima cita: hoy (${formatDateEs(nextAppointment.date)})`;
+    else if (diff === 1) nextApptLabel = `Próxima cita: mañana (${formatDateEs(nextAppointment.date)})`;
+    else nextApptLabel = `Próxima cita: en ${diff} días (${formatDateEs(nextAppointment.date)})`;
+  }
+
   const dob = patient.dateOfBirth as string;
   const [year, month, day] = dob.split('-');
 
@@ -155,12 +211,32 @@ export default async function PatientDetailPage({ params }: PageProps) {
                   ⚠️ Incompatibilidad Rh
                 </span>
               )}
+              {activePregnancy && (
+                <span className="inline-flex items-center rounded-full bg-pink-100 px-2 py-0.5 text-xs font-semibold text-pink-800 dark:bg-pink-900/40 dark:text-pink-300">
+                  🤰 {activePregnancy.weeks} sem + {activePregnancy.days} día{activePregnancy.days !== 1 ? 's' : ''} · {TRIMESTER_LABELS[activePregnancy.trimester]}
+                </span>
+              )}
+              {staleFUM && (
+                <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                  ⚠️ Verificar FUM / fin de embarazo
+                </span>
+              )}
               {!patient.isActive && (
                 <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                   Inactivo
                 </span>
               )}
             </div>
+            {(lastVisitLabel || nextApptLabel) && (
+              <div className="mt-2 flex flex-wrap gap-3">
+                {lastVisitLabel && (
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">{lastVisitLabel}</span>
+                )}
+                {nextApptLabel && (
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{nextApptLabel}</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

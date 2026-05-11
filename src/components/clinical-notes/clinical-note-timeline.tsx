@@ -25,6 +25,44 @@ function formatDay(dateStr: string): string {
   return String(d.getDate());
 }
 
+function daysBetween(dateA: string, dateB: string): number {
+  const a = new Date(dateA + 'T00:00:00');
+  const b = new Date(dateB + 'T00:00:00');
+  return Math.abs(Math.round((b.getTime() - a.getTime()) / 86_400_000));
+}
+
+function formatElapsed(days: number): string {
+  if (days === 0) return 'mismo día';
+  if (days === 1) return '1 día después';
+  if (days < 7) return `${days} días después`;
+  const weeks = Math.round(days / 7);
+  if (weeks === 1) return '1 semana después';
+  if (days < 60) return `${weeks} semanas después`;
+  const months = Math.round(days / 30);
+  if (months === 1) return '1 mes después';
+  return `${months} meses después`;
+}
+
+const VISIT_TYPE_PATTERNS: { pattern: RegExp; label: string }[] = [
+  { pattern: /primera\s*vez|primera\s*consulta|nuevo\s*paciente/i, label: 'Primera vez' },
+  { pattern: /urgencia|urgente|emergencia/i, label: 'Urgencia' },
+  { pattern: /control|seguimiento|revisión/i, label: 'Control' },
+  { pattern: /post[- ]?operatorio|post[- ]?quirúrgico/i, label: 'Postoperatorio' },
+  { pattern: /parto|labor\s*de\s*parto/i, label: 'Parto' },
+  { pattern: /cesárea/i, label: 'Cesárea' },
+];
+
+function inferVisitType(note: ClinicalNoteListItem): string | null {
+  const text = [
+    note.chiefComplaint ?? '',
+    ...(note.diagnoses.map((d) => d.text)),
+  ].join(' ');
+  for (const { pattern, label } of VISIT_TYPE_PATTERNS) {
+    if (pattern.test(text)) return label;
+  }
+  return 'Consulta';
+}
+
 export function ClinicalNoteTimeline({ notes, patientId, canCreate }: ClinicalNoteTimelineProps) {
   if (notes.length === 0) {
     return (
@@ -67,20 +105,37 @@ export function ClinicalNoteTimeline({ notes, patientId, canCreate }: ClinicalNo
       </div>
 
       <div className="space-y-2">
-        {notes.map((note) => (
-          <TimelineRow key={note.id} note={note} patientId={patientId} />
+        {notes.map((note, i) => (
+          <TimelineRow
+            key={note.id}
+            note={note}
+            patientId={patientId}
+            prevNoteDate={notes[i + 1]?.noteDate ?? null}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function TimelineRow({ note, patientId }: { note: ClinicalNoteListItem; patientId: string }) {
+function TimelineRow({
+  note,
+  patientId,
+  prevNoteDate,
+}: {
+  note: ClinicalNoteListItem;
+  patientId: string;
+  prevNoteDate: string | null;
+}) {
   const firstDiagnosis = note.diagnoses[0];
   const displayText =
     firstDiagnosis?.text ||
     note.chiefComplaint ||
     (note.isSigned ? 'Consulta sin diagnóstico registrado' : 'Borrador sin diagnóstico');
+
+  const visitType = inferVisitType(note);
+  const elapsed =
+    prevNoteDate ? formatElapsed(daysBetween(prevNoteDate, note.noteDate)) : null;
 
   return (
     <Link
@@ -102,6 +157,11 @@ function TimelineRow({ note, patientId }: { note: ClinicalNoteListItem; patientI
             {formatDate(note.noteDate)}
           </span>
           <ClinicalNoteStatusBadge isSigned={note.isSigned} />
+          {visitType && (
+            <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+              {visitType}
+            </span>
+          )}
           {note.diagnoses.map((d) => d.code).filter(Boolean).slice(0, 2).map((code) => (
             <span
               key={code}
@@ -114,9 +174,14 @@ function TimelineRow({ note, patientId }: { note: ClinicalNoteListItem; patientI
         <p className="mt-0.5 truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
           {displayText}
         </p>
-        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-          <User className="h-3 w-3 shrink-0" />
-          {note.author.fullName}
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="flex items-center gap-1.5">
+            <User className="h-3 w-3 shrink-0" />
+            {note.author.fullName}
+          </span>
+          {elapsed && (
+            <span className="text-zinc-400 dark:text-zinc-500">↑ {elapsed}</span>
+          )}
         </div>
       </div>
     </Link>

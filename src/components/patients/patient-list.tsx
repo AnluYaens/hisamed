@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, ChevronRight, User } from 'lucide-react';
 import type { PatientListItem, PatientsPage } from '@/queries/patients';
 import { PatientAvatar } from '@/components/patients/patient-avatar';
+import { calcGestationalAge } from '@/lib/obstetric';
 
 function calcAge(dateOfBirth: string): number {
   const dob = new Date(dateOfBirth);
@@ -23,9 +24,10 @@ const ID_TYPE_LABELS: Record<string, string> = {
 
 interface PatientListProps {
   data: PatientsPage;
+  todayStr: string;
 }
 
-export function PatientList({ data }: PatientListProps) {
+export function PatientList({ data, todayStr }: PatientListProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -75,7 +77,7 @@ export function PatientList({ data }: PatientListProps) {
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {data.items.map((patient: PatientListItem) => (
-              <PatientRow key={patient.id} patient={patient} />
+              <PatientRow key={patient.id} patient={patient} todayStr={todayStr} />
             ))}
           </tbody>
         </table>
@@ -115,11 +117,18 @@ export function PatientList({ data }: PatientListProps) {
   );
 }
 
-function PatientRow({ patient }: { patient: PatientListItem }) {
+function PatientRow({ patient, todayStr }: { patient: PatientListItem; todayStr: string }) {
   const router = useRouter();
   const prefix = ID_TYPE_LABELS[patient.idType] ?? '';
   const age = calcAge(patient.dateOfBirth);
   const href = `/pacientes/${patient.id}`;
+
+  const ga =
+    patient.sex === 'F' && patient.fumDate && !patient.pregnancyEnded
+      ? calcGestationalAge(patient.fumDate, todayStr)
+      : null;
+  const activePregnancy = ga && ga.weeks < 42 ? ga : null;
+  const staleFUM = ga !== null && ga.weeks >= 42;
 
   return (
     <tr
@@ -137,14 +146,26 @@ function PatientRow({ patient }: { patient: PatientListItem }) {
             textClassName="text-xs"
           />
           <div>
-            <Link
-              href={href}
-              prefetch={false}
-              onClick={(e) => e.stopPropagation()}
-              className="font-medium text-zinc-900 group-hover:text-blue-700 dark:text-zinc-100 dark:group-hover:text-blue-400"
-            >
-              {patient.lastName}, {patient.firstName}
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={href}
+                prefetch={false}
+                onClick={(e) => e.stopPropagation()}
+                className="font-medium text-zinc-900 group-hover:text-blue-700 dark:text-zinc-100 dark:group-hover:text-blue-400"
+              >
+                {patient.lastName}, {patient.firstName}
+              </Link>
+              {activePregnancy && (
+                <span className="inline-flex items-center rounded-full bg-pink-100 px-1.5 py-0.5 text-[11px] font-medium text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
+                  🤰 {activePregnancy.weeks}s+{activePregnancy.days}d
+                </span>
+              )}
+              {staleFUM && (
+                <span className="inline-flex items-center rounded-full bg-yellow-100 px-1.5 py-0.5 text-[11px] font-medium text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">
+                  ⚠️ Verificar FUM
+                </span>
+              )}
+            </div>
             {!patient.isActive && (
               <span className="block text-xs text-zinc-400 dark:text-zinc-500">(Inactivo)</span>
             )}

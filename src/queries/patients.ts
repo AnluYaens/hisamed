@@ -1,6 +1,6 @@
 import { and, count, desc, eq, ilike, or } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { patients, patientPartners } from '@/lib/db/schema';
+import { medicalHistories, patients, patientPartners } from '@/lib/db/schema';
 
 const DEFAULT_LIMIT = 20;
 
@@ -16,6 +16,8 @@ export interface GetPatientsOptions {
   search?: string;
   page?: number;
   limit?: number;
+  /** Include pregnancy tracking data from medical history. Only true for admin/doctor. */
+  includeObstetric?: boolean;
 }
 
 export interface PatientsPage {
@@ -39,11 +41,15 @@ export interface PatientListItem {
   avatarStorageKey: string | null;
   isActive: boolean;
   createdAt: Date;
+  /** FUM from medical history specialty_data, null if none recorded. */
+  fumDate: string | null;
+  /** True when pregnancy_ended is set in specialty_data. */
+  pregnancyEnded: boolean;
 }
 
 export async function getPatients(
   clinicId: string,
-  { search, page = 1, limit = DEFAULT_LIMIT }: GetPatientsOptions = {},
+  { search, page = 1, limit = DEFAULT_LIMIT, includeObstetric = false }: GetPatientsOptions = {},
 ): Promise<PatientsPage> {
   const offset = (page - 1) * limit;
 
@@ -60,35 +66,68 @@ export async function getPatients(
 
   const baseWhere = and(eq(patients.clinicId, clinicId), searchCondition);
 
-  const [rows, [{ value: total }]] = await Promise.all([
-    db
-      .select({
-        id: patients.id,
-        idNumber: patients.idNumber,
-        idType: patients.idType,
-        firstName: patients.firstName,
-        lastName: patients.lastName,
-        dateOfBirth: patients.dateOfBirth,
-        sex: patients.sex,
-        phone: patients.phone,
-        email: patients.email,
-        avatarStorageKey: patients.avatarStorageKey,
-        isActive: patients.isActive,
-        createdAt: patients.createdAt,
-      })
-      .from(patients)
-      .where(baseWhere)
-      .orderBy(desc(patients.createdAt))
-      .limit(limit)
-      .offset(offset),
+  const baseSelect = {
+    id: patients.id,
+    idNumber: patients.idNumber,
+    idType: patients.idType,
+    firstName: patients.firstName,
+    lastName: patients.lastName,
+    dateOfBirth: patients.dateOfBirth,
+    sex: patients.sex,
+    phone: patients.phone,
+    email: patients.email,
+    avatarStorageKey: patients.avatarStorageKey,
+    isActive: patients.isActive,
+    createdAt: patients.createdAt,
+  };
 
+  const [[{ value: total }], rawRows] = await Promise.all([
     db.select({ value: count() }).from(patients).where(baseWhere),
+    includeObstetric
+      ? db
+          .select({ ...baseSelect, medSpecialtyData: medicalHistories.specialtyData })
+          .from(patients)
+          .leftJoin(medicalHistories, eq(medicalHistories.patientId, patients.id))
+          .where(baseWhere)
+          .orderBy(desc(patients.createdAt))
+          .limit(limit)
+          .offset(offset)
+      : db
+          .select(baseSelect)
+          .from(patients)
+          .where(baseWhere)
+          .orderBy(desc(patients.createdAt))
+          .limit(limit)
+          .offset(offset),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(Number(total) / limit));
 
+  const items: PatientListItem[] = rawRows.map((r) => {
+    const sd =
+      'medSpecialtyData' in r
+        ? (r.medSpecialtyData as Record<string, unknown> | null)
+        : null;
+    return {
+      id: r.id,
+      idNumber: r.idNumber,
+      idType: r.idType,
+      firstName: r.firstName,
+      lastName: r.lastName,
+      dateOfBirth: r.dateOfBirth as string,
+      sex: r.sex,
+      phone: r.phone,
+      email: r.email,
+      avatarStorageKey: r.avatarStorageKey,
+      isActive: r.isActive,
+      createdAt: r.createdAt,
+      fumDate: (sd?.last_menstrual_period as string | null | undefined) ?? null,
+      pregnancyEnded: sd?.pregnancy_ended === true,
+    };
+  });
+
   return {
-    items: rows as PatientListItem[],
+    items,
     total: Number(total),
     page,
     limit,

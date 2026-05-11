@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Users, CalendarDays, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MedicalToolsDrawer } from '@/components/medical-tools/medical-tools-drawer';
 
 const navItems = [
   { href: '/', label: 'Inicio', icon: Home },
@@ -40,6 +41,8 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
           </Link>
         );
       })}
+      <div className="my-1 h-px bg-zinc-100 dark:bg-zinc-800" />
+      <MedicalToolsDrawer />
     </nav>
   );
 }
