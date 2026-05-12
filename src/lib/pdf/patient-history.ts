@@ -66,14 +66,20 @@ const ATTACHMENT_CATEGORY_LABELS: Record<string, string> = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function fmtAge(dob: string): number | null {
+function fmtAge(dob: string, timeZone: string, now: Date): number | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return null;
   const [by, bm, bd] = dob.split('-').map(Number);
-  const now = new Date();
-  let age = now.getUTCFullYear() - by;
-  const m = now.getUTCMonth() + 1;
-  const d = now.getUTCDate();
-  if (m < bm || (m === bm && d < bd)) age -= 1;
+  // Derive today's calendar date in the clinic's timezone — not the server's
+  // UTC clock — so age stays stable around birthdays regardless of host TZ.
+  const todayStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+  const [ty, tm, td] = todayStr.split('-').map(Number);
+  let age = ty - by;
+  if (tm < bm || (tm === bm && td < bd)) age -= 1;
   return age >= 0 && age < 150 ? age : null;
 }
 
@@ -310,7 +316,7 @@ function renderPatientData(
   field(ctx, 'Nombre', `${patient.firstName} ${patient.lastName}`);
   field(ctx, 'Cédula', `${ID_TYPE_LABELS[patient.idType] ?? patient.idType} ${patient.idNumber}`);
   field(ctx, 'Fecha de nacimiento', formatDateEs(patient.dateOfBirth));
-  const age = fmtAge(patient.dateOfBirth);
+  const age = fmtAge(patient.dateOfBirth, ctx.timeZone, ctx.generatedAt);
   field(ctx, 'Edad', age != null ? `${age} años` : null);
   field(ctx, 'Sexo', SEX_LABELS[patient.sex] ?? patient.sex);
   field(ctx, 'Teléfono', patient.phone);
@@ -611,15 +617,17 @@ function renderVitals(ctx: DocCtx, vitals: PatientHistoryVitalSigns[]) {
 function renderNote(ctx: DocCtx, note: PatientHistoryNote) {
   ensureSpace(ctx, 120);
   const { doc } = ctx;
+  // Draft notes MUST be clearly labeled — they have not been clinically
+  // attested. Showing them in the same chrome as signed notes would let a
+  // reader mistake provisional content for an official record.
+  const statusSuffix = note.isSigned
+    ? '  ✓ Firmada'
+    : '  ⚠ BORRADOR — sin firmar';
   doc
     .font('Helvetica-Bold')
     .fontSize(11)
-    .fillColor('#0a3d62')
-    .text(
-      `${formatDateEs(note.noteDate)} — ${note.authorFullName}${
-        note.isSigned ? '  ✓ firmada' : ''
-      }`,
-    );
+    .fillColor(note.isSigned ? '#0a3d62' : '#92400e')
+    .text(`${formatDateEs(note.noteDate)} — ${note.authorFullName}${statusSuffix}`);
   doc.fillColor('#000000').moveDown(0.2);
 
   renderVitals(ctx, note.vitals);
