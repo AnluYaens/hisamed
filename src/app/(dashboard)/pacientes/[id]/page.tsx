@@ -12,6 +12,7 @@ import { getClinicalDocumentsByPatient } from '@/queries/clinical-documents';
 import { PatientTabs, type PatientTabId } from '@/components/patients/patient-tabs';
 import { ClinicalDocumentList } from '@/components/clinical-documents/clinical-document-list';
 import { ToggleActiveButton } from '@/components/patients/toggle-active-button';
+import { ExportHistoryButton } from '@/components/patients/export-history-button';
 import { MedicalHistoryForm } from '@/components/patients/medical-history-form';
 import { PatientAppointments } from '@/components/appointments/patient-appointments';
 import { ClinicalNoteTimeline } from '@/components/clinical-notes/clinical-note-timeline';
@@ -240,12 +241,15 @@ export default async function PatientDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {session.role === 'admin' && (
-          <ToggleActiveButton
-            patientId={patient.id}
-            isActive={patient.isActive}
-          />
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {canViewClinical && <ExportHistoryButton patientId={patient.id} />}
+          {session.role === 'admin' && (
+            <ToggleActiveButton
+              patientId={patient.id}
+              isActive={patient.isActive}
+            />
+          )}
+        </div>
       </div>
 
       {/* Tabs */}

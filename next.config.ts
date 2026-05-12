@@ -36,6 +36,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // pdfkit reads its bundled AFM font files from disk at runtime. Bundling it
+  // through webpack/turbopack breaks the lookup, so it must run as an external
+  // CJS package inside the Node.js runtime where the route handlers execute.
+  serverExternalPackages: ['pdfkit'],
   async headers() {
     return [
       {
