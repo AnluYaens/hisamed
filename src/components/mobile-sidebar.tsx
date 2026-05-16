@@ -5,12 +5,14 @@ import { Stethoscope } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { Separator } from '@/components/ui/separator';
+import type { UserRole } from '@/lib/db/schema';
 
 interface MobileSidebarProps {
+  role: UserRole;
   children: React.ReactNode;
 }
 
-export function MobileSidebar({ children }: MobileSidebarProps) {
+export function MobileSidebar({ role, children }: MobileSidebarProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -25,7 +27,7 @@ export function MobileSidebar({ children }: MobileSidebarProps) {
             <SheetTitle className="text-sm font-semibold tracking-tight">ClinicaMVP</SheetTitle>
           </SheetHeader>
           <Separator />
-          <SidebarNav onNavigate={() => setOpen(false)} />
+          <SidebarNav role={role} onNavigate={() => setOpen(false)} />
         </SheetContent>
       </Sheet>
     </>

@@ -56,7 +56,7 @@ export default async function DashboardLayout({
         </div>
         <Separator />
         <div className="flex-1 overflow-y-auto">
-          <SidebarNav />
+          <SidebarNav role={user.role} />
         </div>
         <Separator />
         <div className="p-4">
@@ -81,7 +81,7 @@ export default async function DashboardLayout({
         {/* ── Top header ── */}
         <header className="flex h-16 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-4 dark:border-zinc-800 dark:bg-zinc-950 lg:px-6">
           {/* Mobile hamburger */}
-          <MobileSidebar>
+          <MobileSidebar role={user.role}>
             <button
               type="button"
               className="inline-flex items-center justify-center rounded-md p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 lg:hidden"

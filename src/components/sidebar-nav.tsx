@@ -2,27 +2,44 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, CalendarDays, Settings } from 'lucide-react';
+import { Home, Users, CalendarDays, Settings, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { UserRole } from '@/lib/db/schema';
+import { canAccessReports } from '@/lib/reports/access';
 import { MedicalToolsDrawer } from '@/components/medical-tools/medical-tools-drawer';
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: typeof Home;
+  /** When set, the item only renders for these roles. */
+  roles?: UserRole[];
+}
+
+const navItems: NavItem[] = [
   { href: '/', label: 'Inicio', icon: Home },
   { href: '/pacientes', label: 'Pacientes', icon: Users },
   { href: '/agenda', label: 'Agenda', icon: CalendarDays },
+  { href: '/reportes', label: 'Reportes', icon: BarChart3, roles: ['admin', 'doctor'] },
   { href: '/configuracion', label: 'Configuración', icon: Settings },
 ];
 
 interface SidebarNavProps {
+  role: UserRole;
   onNavigate?: () => void;
 }
 
-export function SidebarNav({ onNavigate }: SidebarNavProps) {
+export function SidebarNav({ role, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
+  const visibleItems = navItems.filter((item) => {
+    if (!item.roles) return true;
+    if (item.href === '/reportes') return canAccessReports(role);
+    return item.roles.includes(role);
+  });
 
   return (
     <nav className="flex flex-col gap-1 p-3">
-      {navItems.map(({ href, label, icon: Icon }) => {
+      {visibleItems.map(({ href, label, icon: Icon }) => {
         const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href);
         return (
           <Link
