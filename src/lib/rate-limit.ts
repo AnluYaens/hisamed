@@ -134,21 +134,34 @@ export async function consumeRateLimit(
 }
 
 /**
- * Enforce one or more limits for a single request. Every spec is consumed
- * (counted) so each independent limit advances; the request is allowed only
- * when every spec is still within budget. `retryAfterSeconds` is the longest
- * wait among the limits that were exceeded.
+ * Enforce one or more limits for a single request. Specs are consumed in
+ * order and consumption stops at the first spec that denies — a request that
+ * is already going to be rejected must not burn an unrelated later bucket.
+ * Otherwise a client throttled by, say, a per-patient limit would also lose
+ * budget against its independent per-user limit for work it never performed,
+ * silently shrinking the real ceiling of the later limit. The request is
+ * allowed only when every spec is still within budget; when denied,
+ * `retryAfterSeconds` is the wait reported by the spec that tripped.
+ *
+ * Order therefore matters: list the most specific / cheapest-to-exhaust spec
+ * first so it shields the broader ones.
  */
 export async function enforceRateLimits(
   specs: RateLimitSpec[],
   now: number = Date.now(),
 ): Promise<RateLimitResult> {
-  const results = await Promise.all(specs.map((spec) => consumeRateLimit(spec, now)));
-  const allowed = results.every((r) => r.allowed);
+  const consumed: RateLimitResult[] = [];
+  for (const spec of specs) {
+    const result = await consumeRateLimit(spec, now);
+    consumed.push(result);
+    if (!result.allowed) {
+      return { allowed: false, remaining: 0, retryAfterSeconds: result.retryAfterSeconds };
+    }
+  }
   return {
-    allowed,
-    remaining: Math.min(...results.map((r) => r.remaining)),
-    retryAfterSeconds: allowed ? 0 : Math.max(...results.map((r) => r.retryAfterSeconds)),
+    allowed: true,
+    remaining: consumed.length ? Math.min(...consumed.map((r) => r.remaining)) : 0,
+    retryAfterSeconds: 0,
   };
 }
 
@@ -156,4 +169,38 @@ export async function enforceRateLimits(
 export async function clearRateLimit(key: string): Promise<void> {
   const keyHash = hashKey(key);
   await db.execute(sql`DELETE FROM rate_limit_buckets WHERE key_hash = ${keyHash}`);
+}
+
+/**
+ * Staleness threshold for the bulk cleanup helper: 48 hours. This is far
+ * beyond the longest window the limiter currently uses (1h), so a bucket
+ * older than this cannot possibly belong to a window that is still current —
+ * the cleanup never deletes an active counter.
+ */
+export const STALE_BUCKET_THRESHOLD_MS = 48 * 60 * 60 * 1000;
+
+/**
+ * Delete every rate-limit bucket whose window started more than `olderThanMs`
+ * ago. A belt-and-suspenders backstop to the opportunistic per-write sweep in
+ * `maybeSweep` / `consumeRateLimit`: those already keep the table bounded, but
+ * a key that is never touched again would otherwise leave a stale row forever.
+ *
+ * Production ops can run this periodically (cron) or manually via
+ * `pnpm db:cleanup-rate-limits` — see `scripts/cleanup-rate-limits.ts`.
+ *
+ * The default threshold (48h) is intentionally well past the longest window
+ * in use, so this only ever removes buckets whose window has long since
+ * closed; current-window / active buckets are never deleted.
+ *
+ * @returns the number of rows deleted.
+ */
+export async function cleanupStaleRateLimitBuckets(
+  olderThanMs: number = STALE_BUCKET_THRESHOLD_MS,
+  now: number = Date.now(),
+): Promise<number> {
+  const cutoff = now - olderThanMs;
+  const result = await db.execute(
+    sql`DELETE FROM rate_limit_buckets WHERE window_start < ${cutoff}`,
+  );
+  return result.rowCount ?? 0;
 }

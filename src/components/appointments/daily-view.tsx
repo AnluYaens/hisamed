@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Calendar } from 'lucide-react';
 import { AppointmentCard } from '@/components/appointments/appointment-card';
 import type { AppointmentWithDetails } from '@/queries/appointments';

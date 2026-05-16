@@ -14,17 +14,21 @@ import {
   consumeRateLimit,
   enforceRateLimits,
   clearRateLimit,
+  cleanupStaleRateLimitBuckets,
+  STALE_BUCKET_THRESHOLD_MS,
 } from '@/lib/rate-limit';
 
 // The helper issues several statements per call (upsert + prune + sweep).
-// `countSequence` answers each `RETURNING count` / `SELECT count` query with
-// the next supplied value; bookkeeping statements resolve to an empty result.
+// `countSequence` answers each count-bearing statement (the INSERT upsert or
+// a `SELECT count`) with the next supplied value; bookkeeping DELETEs resolve
+// to an empty result. Matching on the SQL text keeps this stable whether the
+// caller consumes specs in parallel or sequentially.
 function countSequence(...counts: number[]) {
   let i = 0;
-  mocks.execute.mockImplementation(async () => {
-    // A DELETE has no RETURNING — drizzle still resolves to { rows: [] }.
-    // Only the first statement of each consume/check call reads a count.
-    if (i < counts.length) {
+  mocks.execute.mockImplementation(async (query: unknown) => {
+    const text = JSON.stringify(query);
+    const isCountStatement = text.includes('INSERT INTO') || text.includes('SELECT count');
+    if (isCountStatement && i < counts.length) {
       return { rows: [{ count: counts[i++] }] };
     }
     return { rows: [] };
@@ -111,6 +115,25 @@ describe('enforceRateLimits', () => {
     expect(res.allowed).toBe(false);
     expect(res.retryAfterSeconds).toBeGreaterThan(0);
   });
+
+  it('does not consume a later bucket once an earlier spec is denied', async () => {
+    // The first spec is already over budget — the request is doomed, so the
+    // second spec's bucket must never be written.
+    countSequence(99);
+    const res = await enforceRateLimits([
+      { key: 'first', limit: 5, windowSeconds: 600 },
+      { key: 'second', limit: 5, windowSeconds: 600 },
+    ]);
+    expect(res.allowed).toBe(false);
+
+    const firstHash = createHash('sha256').update('first').digest('hex');
+    const secondHash = createHash('sha256').update('second').digest('hex');
+    const statements = mocks.execute.mock.calls.map((c) => JSON.stringify(c[0]));
+    // The first spec was consumed...
+    expect(statements.some((s) => s.includes(firstHash))).toBe(true);
+    // ...but the second spec's bucket was never touched at all.
+    expect(statements.some((s) => s.includes(secondHash))).toBe(false);
+  });
 });
 
 describe('clearRateLimit', () => {
@@ -119,5 +142,33 @@ describe('clearRateLimit', () => {
     expect(mocks.execute).toHaveBeenCalledOnce();
     const stmt = JSON.stringify(mocks.execute.mock.calls[0]?.[0]);
     expect(stmt).toContain(createHash('sha256').update('some-key').digest('hex'));
+  });
+});
+
+describe('cleanupStaleRateLimitBuckets', () => {
+  it('deletes buckets older than the cutoff and never current-window ones', async () => {
+    mocks.execute.mockResolvedValueOnce({ rows: [], rowCount: 7 });
+    const now = 1_000_000_000_000;
+    const deleted = await cleanupStaleRateLimitBuckets(STALE_BUCKET_THRESHOLD_MS, now);
+
+    expect(deleted).toBe(7);
+    const stmt = JSON.stringify(mocks.execute.mock.calls[0]?.[0]);
+    expect(stmt).toContain('DELETE FROM rate_limit_buckets');
+    // Only windows that started before `now - threshold` are removed; any
+    // active/current-window bucket has a far larger window_start than this.
+    expect(stmt).toContain(String(now - STALE_BUCKET_THRESHOLD_MS));
+  });
+
+  it('default threshold (48h) is well past the longest window in use (1h)', () => {
+    // Guarantees the cutoff can never fall inside a still-open window, so a
+    // current/active counter is never a deletion candidate.
+    const longestWindowMs = 3600 * 1000;
+    expect(STALE_BUCKET_THRESHOLD_MS).toBeGreaterThan(longestWindowMs);
+  });
+
+  it('reports zero when the driver returns no rowCount', async () => {
+    mocks.execute.mockResolvedValueOnce({ rows: [] });
+    const deleted = await cleanupStaleRateLimitBuckets();
+    expect(deleted).toBe(0);
   });
 });

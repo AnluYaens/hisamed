@@ -56,6 +56,18 @@ interface DiagnosisEntry {
 
 const EMPTY_RESULTS: GlobalSearchResults = { patients: [], notes: [] };
 
+// Indexing note (Phase 11.1 backlog): every query below is anchored on an
+// equality filter on `patients.clinic_id`, which is the prefix column of the
+// existing composite indexes (`patients_clinic_id_number_idx`,
+// `patients_clinic_name_idx`, `patients_clinic_active_idx`). Postgres uses
+// those to scan only the caller's clinic; the `ILIKE '%term%'` predicates
+// then filter that already-small per-clinic set. Substring `ILIKE` itself
+// cannot use a btree index — making it index-backed would require a `pg_trgm`
+// GIN index (and enabling the extension) for patient fields, and for the
+// `diagnoses::text` cast an expression index on top of that. That is a real
+// infra change for a result set that is tiny and capped at SEARCH_GROUP_LIMIT,
+// so it is intentionally deferred. Revisit if a single clinic ever holds
+// enough patients/notes for the per-clinic scan to become slow.
 async function searchPatientsFor(
   clinicId: string,
   pattern: string,
