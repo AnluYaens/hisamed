@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getSession } from '@/lib/auth/session';
-import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
+import { auditLog, safeAuditLog, getClientIpFromHeaders } from '@/lib/audit';
+import { enforceRateLimits } from '@/lib/rate-limit';
 import { getFullClinic } from '@/queries/clinic';
 import { getPatientHistoryForExport } from '@/queries/export-history';
 import { buildPatientHistoryPdf, exportHistoryFilename } from '@/lib/pdf/patient-history';
@@ -34,6 +35,34 @@ export async function GET(
   const { id } = await ctx.params;
   if (!ID_PATTERN.test(id)) {
     return NextResponse.json({ success: false, error: 'ID inválido' }, { status: 400 });
+  }
+
+  // Rate limit BEFORE generating the PDF: 10 exports/hour per patient and
+  // 30/hour per user. Keys carry only ids — never PHI or file content.
+  const rate = await enforceRateLimits([
+    {
+      key: `export-history:user-patient:${session.userId}:${id}`,
+      limit: 10,
+      windowSeconds: 3600,
+    },
+    { key: `export-history:user:${session.userId}`, limit: 30, windowSeconds: 3600 },
+  ]);
+  if (!rate.allowed) {
+    // Best-effort audit row: a denied export is still a meaningful event,
+    // but losing this log must not turn a 429 into a 500.
+    await safeAuditLog({
+      clinicId: session.clinicId,
+      userId: session.userId,
+      action: 'EXPORT',
+      resourceType: 'patient_history',
+      resourceId: id,
+      details: { format: 'pdf', status: 'rate_limited' },
+      ipAddress: await getClientIpFromHeaders(),
+    });
+    return NextResponse.json(
+      { success: false, error: 'Has alcanzado el límite de solicitudes. Intenta nuevamente más tarde.' },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } },
+    );
   }
 
   const clinic = await getFullClinic(session.clinicId);

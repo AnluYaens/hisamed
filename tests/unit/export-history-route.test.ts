@@ -22,7 +22,9 @@ const mocks = vi.hoisted(() => ({
   getPatientHistoryForExportMock: vi.fn(),
   buildPdfMock: vi.fn(),
   auditLogMock: vi.fn(),
+  safeAuditLogMock: vi.fn(),
   getClientIpFromHeadersMock: vi.fn(),
+  enforceRateLimitsMock: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/session', () => ({
@@ -47,7 +49,12 @@ vi.mock('@/lib/pdf/patient-history', () => ({
 
 vi.mock('@/lib/audit', () => ({
   auditLog: mocks.auditLogMock,
+  safeAuditLog: mocks.safeAuditLogMock,
   getClientIpFromHeaders: mocks.getClientIpFromHeadersMock,
+}));
+
+vi.mock('@/lib/rate-limit', () => ({
+  enforceRateLimits: mocks.enforceRateLimitsMock,
 }));
 
 import { GET } from '@/app/api/patients/[id]/export-history/route';
@@ -114,6 +121,12 @@ beforeEach(() => {
   });
   mocks.buildPdfMock.mockResolvedValue(Buffer.from('%PDF-1.7\n%fake', 'utf8'));
   mocks.auditLogMock.mockResolvedValue(undefined);
+  mocks.safeAuditLogMock.mockResolvedValue(undefined);
+  mocks.enforceRateLimitsMock.mockResolvedValue({
+    allowed: true,
+    remaining: 9,
+    retryAfterSeconds: 0,
+  });
 });
 
 afterEach(() => {
@@ -206,6 +219,44 @@ describe('GET /api/patients/[id]/export-history — cross-clinic', () => {
     expect(mocks.buildPdfMock).not.toHaveBeenCalled();
     expect(mocks.auditLogMock).not.toHaveBeenCalled();
     expect(OTHER_CLINIC).toBeDefined();
+  });
+});
+
+describe('GET /api/patients/[id]/export-history — rate limiting', () => {
+  it('responde 429 y no genera el PDF cuando se excede el límite', async () => {
+    setSession('doctor');
+    mocks.enforceRateLimitsMock.mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: 1800,
+    });
+
+    const res = await GET(req as never, paramsOf(PATIENT_ID));
+    const body = await res.json();
+
+    expect(res.status).toBe(429);
+    expect(body.error).toBe(
+      'Has alcanzado el límite de solicitudes. Intenta nuevamente más tarde.',
+    );
+    expect(res.headers.get('Retry-After')).toBe('1800');
+    expect(mocks.getPatientHistoryForExportMock).not.toHaveBeenCalled();
+    expect(mocks.buildPdfMock).not.toHaveBeenCalled();
+  });
+
+  it('registra una auditoría status=rate_limited al ser limitado', async () => {
+    setSession('doctor');
+    mocks.enforceRateLimitsMock.mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: 60,
+    });
+
+    await GET(req as never, paramsOf(PATIENT_ID));
+
+    expect(mocks.safeAuditLogMock).toHaveBeenCalledTimes(1);
+    const row = mocks.safeAuditLogMock.mock.calls[0][0];
+    expect(row.action).toBe('EXPORT');
+    expect(row.details.status).toBe('rate_limited');
   });
 });
 

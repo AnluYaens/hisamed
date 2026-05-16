@@ -3,7 +3,8 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { attachments, clinicalNotes, patients } from '@/lib/db/schema';
 import { getSession } from '@/lib/auth/session';
-import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
+import { auditLog, safeAuditLog, getClientIpFromHeaders } from '@/lib/audit';
+import { consumeRateLimit } from '@/lib/rate-limit';
 import { generateId } from '@/lib/utils/generate-id';
 import { deleteFile, uploadFile } from '@/lib/storage';
 import {
@@ -83,6 +84,28 @@ export async function POST(request: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
+  }
+
+  // Rate limit BEFORE buffering the multipart body: 30 uploads/hour per user.
+  // Existing file size and MIME checks below are unchanged.
+  const rate = await consumeRateLimit({
+    key: `attachment-upload:user:${session.userId}`,
+    limit: 30,
+    windowSeconds: 3600,
+  });
+  if (!rate.allowed) {
+    await safeAuditLog({
+      clinicId: session.clinicId,
+      userId: session.userId,
+      action: 'CREATE',
+      resourceType: 'attachment',
+      details: { status: 'rate_limited' },
+      ipAddress: await getClientIpFromHeaders(),
+    });
+    return NextResponse.json(
+      { success: false, error: 'Has alcanzado el límite de solicitudes. Intenta nuevamente más tarde.' },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } },
+    );
   }
 
   let formData: FormData;

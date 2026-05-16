@@ -9,11 +9,13 @@ import {
   date,
   time,
   integer,
+  bigint,
   smallint,
   decimal,
   jsonb,
   uniqueIndex,
   index,
+  primaryKey,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
@@ -370,6 +372,25 @@ export const auditLogs = pgTable('audit_logs', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// Fixed-window rate-limit counters. One row per (hashed key, window). The
+// key is a SHA-256 hex digest so no raw IP, email or PHI is ever stored.
+// Rows are disposable: stale windows are pruned opportunistically on write,
+// so the table stays bounded to roughly one row per recently-active key.
+export const rateLimitBuckets = pgTable(
+  'rate_limit_buckets',
+  {
+    keyHash: varchar('key_hash', { length: 64 }).notNull(),
+    // Epoch milliseconds of the window's start. A plain integer — never a
+    // calendar date — so timezone rules in AGENTS.md do not apply here.
+    windowStart: bigint('window_start', { mode: 'number' }).notNull(),
+    count: integer('count').notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.keyHash, table.windowStart] }),
+    index('rate_limit_buckets_window_start_idx').on(table.windowStart),
+  ],
+);
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 
 export const clinicsRelations = relations(clinics, ({ many }) => ({
@@ -495,6 +516,9 @@ export type ClinicalDocumentType =
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+
+export type RateLimitBucket = typeof rateLimitBuckets.$inferSelect;
+export type NewRateLimitBucket = typeof rateLimitBuckets.$inferInsert;
 
 export type VitalSigns = typeof vitalSigns.$inferSelect;
 export type NewVitalSigns = typeof vitalSigns.$inferInsert;

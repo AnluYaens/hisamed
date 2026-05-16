@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { getSession } from '@/lib/auth/session';
-import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
+import { auditLog, safeAuditLog, getClientIpFromHeaders } from '@/lib/audit';
+import { enforceRateLimits } from '@/lib/rate-limit';
 import { getFullClinic } from '@/queries/clinic';
 import { getPatientHistoryForExport } from '@/queries/export-history';
 import { buildPatientHistoryPdf, exportHistoryFilename } from '@/lib/pdf/patient-history';
@@ -41,6 +42,40 @@ export async function POST(
   const { id } = await ctx.params;
   if (!ID_PATTERN.test(id)) {
     return jsonNoStore({ success: false, error: 'ID inválido' }, 400);
+  }
+
+  // Rate limit BEFORE building the PDF or calling Resend: 5 sends/hour per
+  // patient and 15/hour per user. Keys carry only ids — the recipient email
+  // is never part of a key, so no recipient address is hashed or stored here.
+  const rate = await enforceRateLimits([
+    {
+      key: `email-history:user-patient:${session.userId}:${id}`,
+      limit: 5,
+      windowSeconds: 3600,
+    },
+    { key: `email-history:user:${session.userId}`, limit: 15, windowSeconds: 3600 },
+  ]);
+  if (!rate.allowed) {
+    // No send was attempted, so we do NOT write an EMAIL_EXPORT
+    // attempted/sent row. A distinct status='rate_limited' row keeps the
+    // trail honest. Best-effort: a 429 must not become a 500.
+    await safeAuditLog({
+      clinicId: session.clinicId,
+      userId: session.userId,
+      action: 'EMAIL_EXPORT',
+      resourceType: 'patient_history',
+      resourceId: id,
+      details: { format: 'pdf', delivery_provider: 'resend', status: 'rate_limited' },
+      ipAddress: await getClientIpFromHeaders(),
+    });
+    return jsonNoStore(
+      {
+        success: false,
+        error: 'Has alcanzado el límite de envíos. Intenta nuevamente más tarde.',
+      },
+      429,
+      { 'Retry-After': String(rate.retryAfterSeconds) },
+    );
   }
 
   // Reject obviously malformed payloads before touching the DB. We do NOT
@@ -216,9 +251,13 @@ export async function POST(
   return jsonNoStore({ success: true }, 200);
 }
 
-function jsonNoStore(body: Record<string, unknown>, status: number) {
+function jsonNoStore(
+  body: Record<string, unknown>,
+  status: number,
+  extraHeaders?: Record<string, string>,
+) {
   return NextResponse.json(body, {
     status,
-    headers: { 'Cache-Control': 'private, no-store' },
+    headers: { 'Cache-Control': 'private, no-store', ...extraHeaders },
   });
 }

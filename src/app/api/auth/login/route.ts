@@ -8,10 +8,16 @@ import { generateAccessToken, generateRefreshToken } from '@/lib/auth/tokens';
 import { setAuthCookies } from '@/lib/auth/cookies';
 import { safeAuditLog } from '@/lib/audit';
 import {
-  checkLoginRateLimit,
-  registerLoginFailure,
-  resetLoginAttempts,
-} from '@/lib/auth/rate-limit';
+  checkRateLimit,
+  consumeRateLimit,
+  clearRateLimit,
+  type RateLimitSpec,
+} from '@/lib/rate-limit';
+
+// Brute-force window: per-IP and per-(email+IP) caps over 10 minutes.
+const LOGIN_WINDOW_SECONDS = 10 * 60;
+const PER_IP_LIMIT = 10;
+const PER_EMAIL_IP_LIMIT = 5;
 
 function getClientIp(request: NextRequest): string | null {
   const forwarded = request.headers.get('x-forwarded-for');
@@ -24,14 +30,30 @@ function getClientIp(request: NextRequest): string | null {
   return null;
 }
 
-// If no trusted client IP is available, we MUST NOT bucket every caller under
-// a shared 'unknown' key (would let one attacker lock out everyone, or let any
-// caller in dev trivially DoS login). Fall back to the email so failed attempts
-// are scoped to a single target account.
-function rateLimitKey(ip: string | null, email: string): string {
-  if (ip) return `ip:${ip}`;
-  return `email:${email.toLowerCase()}`;
+// Build the rate-limit specs for this attempt. When a trusted client IP is
+// available we cap both the IP and the (email+IP) pair. When it is NOT, we
+// MUST NOT bucket every caller under a shared 'unknown' IP key — that would
+// let one attacker lock out everyone, or let any caller trivially DoS login.
+// In that case we fall back to an email-only key so failures stay scoped to
+// the single target account. Raw IP/email never reach the DB: the helper
+// SHA-256-hashes every key before storing it.
+function loginRateLimitSpecs(ip: string | null, email: string): RateLimitSpec[] {
+  if (ip) {
+    return [
+      { key: `login:ip:${ip}`, limit: PER_IP_LIMIT, windowSeconds: LOGIN_WINDOW_SECONDS },
+      {
+        key: `login:email-ip:${email}:${ip}`,
+        limit: PER_EMAIL_IP_LIMIT,
+        windowSeconds: LOGIN_WINDOW_SECONDS,
+      },
+    ];
+  }
+  return [
+    { key: `login:email:${email}`, limit: PER_EMAIL_IP_LIMIT, windowSeconds: LOGIN_WINDOW_SECONDS },
+  ];
 }
+
+const TOO_MANY_ATTEMPTS = 'Demasiados intentos. Intenta de nuevo en unos minutos.';
 
 export async function POST(request: NextRequest) {
   let body: unknown;
@@ -52,17 +74,18 @@ export async function POST(request: NextRequest) {
   const { email, password } = parsed.data;
   const normalizedEmail = email.toLowerCase();
   const ip = getClientIp(request);
-  const rlKey = rateLimitKey(ip, normalizedEmail);
+  const rlSpecs = loginRateLimitSpecs(ip, normalizedEmail);
 
-  const rate = checkLoginRateLimit(rlKey);
-  if (!rate.allowed) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Demasiados intentos. Intenta de nuevo en unos minutos.',
-      },
-      { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } },
-    );
+  // Read-only pre-check: block before verifying credentials so a locked-out
+  // bucket never reaches argon2. The failure path below counts the attempt.
+  for (const spec of rlSpecs) {
+    const rate = await checkRateLimit(spec);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { success: false, error: TOO_MANY_ATTEMPTS },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } },
+      );
+    }
   }
 
   const user = await db.query.users.findFirst({
@@ -77,20 +100,18 @@ export async function POST(request: NextRequest) {
   const passwordOk = await verifyPassword(hashToVerify, password);
 
   if (!user || !user.isActive || !passwordOk) {
-    const after = registerLoginFailure(rlKey);
-    // If this failed attempt pushed the bucket over the limit, switch to 429
-    // so status code stays consistent with the pre-auth rate-limit branch.
+    // Count this failed attempt against every bucket. We deliberately count
+    // only failures so a user who eventually logs in is not penalised.
+    const after = await Promise.all(rlSpecs.map((spec) => consumeRateLimit(spec)));
+    // If this failure pushed any bucket over its limit, switch to 429 so the
+    // status code stays consistent with the pre-auth rate-limit branch.
     // Genuine bad credentials that still have attempts left stay as 401.
-    if (!after.allowed) {
+    const exceeded = after.filter((r) => !r.allowed);
+    if (exceeded.length > 0) {
+      const retryAfter = Math.max(...exceeded.map((r) => r.retryAfterSeconds));
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Demasiados intentos. Intenta de nuevo en unos minutos.',
-        },
-        {
-          status: 429,
-          headers: { 'Retry-After': String(after.retryAfterSeconds) },
-        },
+        { success: false, error: TOO_MANY_ATTEMPTS },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } },
       );
     }
     return NextResponse.json(
@@ -99,7 +120,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  resetLoginAttempts(rlKey);
+  // Successful login clears the failure buckets for this attempt's keys.
+  await Promise.all(rlSpecs.map((spec) => clearRateLimit(spec.key)));
 
   const claims = { userId: user.id, clinicId: user.clinicId, role: user.role };
   const [accessToken, refreshToken] = await Promise.all([

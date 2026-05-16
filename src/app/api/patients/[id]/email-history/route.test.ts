@@ -10,7 +10,9 @@ const mocks = vi.hoisted(() => ({
   getResendConfig: vi.fn(),
   sendPatientHistoryEmail: vi.fn(),
   auditLog: vi.fn(),
+  safeAuditLog: vi.fn(),
   getClientIpFromHeaders: vi.fn(),
+  enforceRateLimits: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/session', () => ({ getSession: mocks.getSession }));
@@ -28,7 +30,11 @@ vi.mock('@/lib/email/resend', () => ({
 }));
 vi.mock('@/lib/audit', () => ({
   auditLog: mocks.auditLog,
+  safeAuditLog: mocks.safeAuditLog,
   getClientIpFromHeaders: mocks.getClientIpFromHeaders,
+}));
+vi.mock('@/lib/rate-limit', () => ({
+  enforceRateLimits: mocks.enforceRateLimits,
 }));
 
 import { POST } from './route';
@@ -99,7 +105,13 @@ beforeEach(() => {
   });
   mocks.sendPatientHistoryEmail.mockResolvedValue({ ok: true, id: 'msg_1' });
   mocks.auditLog.mockResolvedValue(undefined);
+  mocks.safeAuditLog.mockResolvedValue(undefined);
   mocks.getClientIpFromHeaders.mockResolvedValue(undefined);
+  mocks.enforceRateLimits.mockResolvedValue({
+    allowed: true,
+    remaining: 4,
+    retryAfterSeconds: 0,
+  });
 });
 
 afterEach(() => {
@@ -316,5 +328,60 @@ describe('POST /api/patients/[id]/email-history', () => {
   it('email-history response is no-store', async () => {
     const res = await POST(makeRequest(VALID_BODY), ctxFor(PATIENT_ID));
     expect(res.headers.get('Cache-Control')).toBe('private, no-store');
+  });
+
+  it('returns 429 when rate limited, without building PDF or calling Resend', async () => {
+    mocks.enforceRateLimits.mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: 1800,
+    });
+
+    const res = await POST(makeRequest(VALID_BODY), ctxFor(PATIENT_ID));
+    const body = await res.json();
+
+    expect(res.status).toBe(429);
+    expect(body.error).toBe(
+      'Has alcanzado el límite de envíos. Intenta nuevamente más tarde.',
+    );
+    expect(res.headers.get('Retry-After')).toBe('1800');
+    expect(mocks.buildPatientHistoryPdf).not.toHaveBeenCalled();
+    expect(mocks.sendPatientHistoryEmail).not.toHaveBeenCalled();
+    // No attempted/sent EMAIL_EXPORT row — no send happened.
+    expect(mocks.auditLog).not.toHaveBeenCalled();
+  });
+
+  it('rate-limited request audits status=rate_limited (no recipient email in details)', async () => {
+    mocks.enforceRateLimits.mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: 60,
+    });
+
+    await POST(makeRequest(VALID_BODY), ctxFor(PATIENT_ID));
+
+    expect(mocks.safeAuditLog).toHaveBeenCalledOnce();
+    const row = mocks.safeAuditLog.mock.calls[0]?.[0] as {
+      action: string;
+      details: Record<string, unknown>;
+    };
+    expect(row.action).toBe('EMAIL_EXPORT');
+    expect(row.details.status).toBe('rate_limited');
+    expect(JSON.stringify(row.details)).not.toContain('paciente@correo.com');
+  });
+
+  it('rate-limit keys passed to the limiter never contain the recipient email', async () => {
+    mocks.enforceRateLimits.mockResolvedValue({
+      allowed: true,
+      remaining: 4,
+      retryAfterSeconds: 0,
+    });
+
+    await POST(makeRequest(VALID_BODY), ctxFor(PATIENT_ID));
+
+    const specs = mocks.enforceRateLimits.mock.calls[0]?.[0] as Array<{ key: string }>;
+    for (const spec of specs) {
+      expect(spec.key).not.toContain('paciente@correo.com');
+    }
   });
 });

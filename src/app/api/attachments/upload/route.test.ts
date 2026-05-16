@@ -9,8 +9,10 @@ const mocks = vi.hoisted(() => ({
   uploadFile: vi.fn(),
   deleteFile: vi.fn(),
   auditLog: vi.fn(),
+  safeAuditLog: vi.fn(),
   getClientIpFromHeaders: vi.fn(),
   generateId: vi.fn(),
+  consumeRateLimit: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/session', () => ({
@@ -32,7 +34,12 @@ vi.mock('@/lib/storage', () => ({
 
 vi.mock('@/lib/audit', () => ({
   auditLog: mocks.auditLog,
+  safeAuditLog: mocks.safeAuditLog,
   getClientIpFromHeaders: mocks.getClientIpFromHeaders,
+}));
+
+vi.mock('@/lib/rate-limit', () => ({
+  consumeRateLimit: mocks.consumeRateLimit,
 }));
 
 vi.mock('@/lib/utils/generate-id', () => ({
@@ -100,7 +107,13 @@ beforeEach(() => {
   mocks.uploadFile.mockResolvedValue(undefined);
   mocks.deleteFile.mockResolvedValue(undefined);
   mocks.auditLog.mockResolvedValue(undefined);
+  mocks.safeAuditLog.mockResolvedValue(undefined);
   mocks.getClientIpFromHeaders.mockResolvedValue(null);
+  mocks.consumeRateLimit.mockResolvedValue({
+    allowed: true,
+    remaining: 29,
+    retryAfterSeconds: 0,
+  });
   mocks.generateId
     .mockReturnValueOnce(ATTACHMENT_ID)
     .mockReturnValueOnce('77777777-7777-4777-8777-777777777777');
@@ -192,5 +205,26 @@ describe('POST /api/attachments/upload', () => {
     expect(body.data.id).toBe(ATTACHMENT_ID);
     expect(body.data.storageKey).toBeUndefined();
     expect(mocks.uploadFile).toHaveBeenCalledOnce();
+  });
+
+  it('returns 429 when rate limited, before reading the body or touching storage', async () => {
+    mocks.consumeRateLimit.mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: 900,
+    });
+
+    const res = await POST(requestFor());
+    const body = await res.json();
+
+    expect(res.status).toBe(429);
+    expect(body.error).toBe(
+      'Has alcanzado el límite de solicitudes. Intenta nuevamente más tarde.',
+    );
+    expect(res.headers.get('Retry-After')).toBe('900');
+    expect(mocks.select).not.toHaveBeenCalled();
+    expect(mocks.uploadFile).not.toHaveBeenCalled();
+    expect(mocks.insert).not.toHaveBeenCalled();
+    expect(mocks.safeAuditLog).toHaveBeenCalledOnce();
   });
 });

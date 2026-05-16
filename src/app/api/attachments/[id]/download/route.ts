@@ -6,6 +6,7 @@ import { attachments, patients } from '@/lib/db/schema';
 import { getSession } from '@/lib/auth/session';
 import { safeAuditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { getObject } from '@/lib/storage';
+import { consumeRateLimit } from '@/lib/rate-limit';
 
 const FALLBACK_FILENAME = 'adjunto';
 
@@ -52,6 +53,29 @@ export async function GET(
   // surface a DB error.
   if (!/^[0-9a-f-]{20,}$/i.test(id)) {
     return NextResponse.json({ success: false, error: 'ID inválido' }, { status: 400 });
+  }
+
+  // Rate limit BEFORE any DB lookup or R2 access: 100 downloads/hour per user.
+  // Auth, clinic scoping and the receptionist restriction below are unchanged.
+  const rate = await consumeRateLimit({
+    key: `attachment-download:user:${session.userId}`,
+    limit: 100,
+    windowSeconds: 3600,
+  });
+  if (!rate.allowed) {
+    await safeAuditLog({
+      clinicId: session.clinicId,
+      userId: session.userId,
+      action: 'READ',
+      resourceType: 'attachment',
+      resourceId: id,
+      details: { status: 'rate_limited' },
+      ipAddress: await getClientIpFromHeaders(),
+    });
+    return NextResponse.json(
+      { success: false, error: 'Has alcanzado el límite de solicitudes. Intenta nuevamente más tarde.' },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } },
+    );
   }
 
   // Clinic-scoped lookup: join attachments → patients and filter by the
