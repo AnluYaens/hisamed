@@ -76,7 +76,7 @@ function Section({ title, defaultOpen = false, children, hasContent = false }: S
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div className="glass-card rounded-[22px]">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

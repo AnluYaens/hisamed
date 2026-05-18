@@ -36,15 +36,17 @@ export function PatientAppointments({ appointments, patientId, todayStr }: Patie
 
   if (appointments.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-white py-16 text-center dark:border-zinc-700 dark:bg-zinc-900">
-        <Calendar className="mb-3 h-8 w-8 text-zinc-300 dark:text-zinc-600" />
-        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Sin citas registradas</p>
-        <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+      <div className="glass-card flex flex-col items-center justify-center rounded-[22px] py-14 text-center">
+        <span className="glass-tile flex h-16 w-16 items-center justify-center rounded-[22px] bg-[linear-gradient(135deg,#F0FDFA,#CCFBF1)] text-teal-600">
+          <Calendar className="h-7 w-7" />
+        </span>
+        <p className="mt-2 text-[15px] font-semibold text-slate-800">Sin citas registradas</p>
+        <p className="mt-1 max-w-80 text-[13px] leading-relaxed text-slate-500">
           Las citas del paciente aparecerán aquí.
         </p>
         <Link
           href="/agenda/nueva"
-          className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-colors duration-150 hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/40"
+          className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-full bg-[linear-gradient(180deg,#14B8A6,#0D9488)] px-4 text-sm font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.25)_inset,0_6px_14px_-4px_rgba(13,148,136,0.5)] transition-all hover:bg-[linear-gradient(180deg,#0D9488,#0F766E)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/40"
         >
           <Calendar className="h-3.5 w-3.5" />
           Nueva cita
@@ -102,7 +104,7 @@ export function PatientAppointments({ appointments, patientId, todayStr }: Patie
 
 function AppointmentRow({ appt }: { appt: AppointmentWithDetails }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900">
+    <div className="flex items-start gap-3 glass-surface rounded-[18px] p-3.5">
       {/* Date column */}
       <div className="flex w-12 shrink-0 flex-col items-center rounded-lg bg-zinc-50 py-1.5 text-center dark:bg-zinc-800">
         <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">

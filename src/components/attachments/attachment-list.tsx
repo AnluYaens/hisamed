@@ -79,12 +79,14 @@ export function AttachmentList({
 }: AttachmentListProps) {
   if (attachments.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-white py-12 text-center dark:border-zinc-700 dark:bg-zinc-900">
-        <Paperclip className="mb-2 h-5 w-5 text-zinc-400" />
-        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+      <div className="glass-card flex flex-col items-center justify-center rounded-[22px] py-14 text-center">
+        <span className="glass-tile flex h-16 w-16 items-center justify-center rounded-[22px] bg-[linear-gradient(135deg,#F0FDFA,#CCFBF1)] text-teal-600">
+          <Paperclip className="h-7 w-7" />
+        </span>
+        <p className="mt-2 text-[15px] font-semibold text-slate-800">
           Aún no hay adjuntos
         </p>
-        <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+        <p className="mt-1 max-w-80 text-[13px] leading-relaxed text-slate-500">
           Sube PDFs o imágenes relacionadas con este paciente.
         </p>
       </div>
@@ -101,7 +103,7 @@ export function AttachmentList({
         return (
           <li
             key={att.id}
-            className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900"
+            className="flex flex-col gap-3 glass-card rounded-[22px] p-5"
           >
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">

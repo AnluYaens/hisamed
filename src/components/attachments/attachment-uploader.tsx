@@ -202,7 +202,7 @@ export function AttachmentUploader({
           />
         </label>
       ) : (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="glass-card rounded-[22px] p-5">
           <div className="flex items-start gap-3">
             <FileIcon className="h-5 w-5 shrink-0 text-zinc-500" />
             <div className="min-w-0 flex-1">
