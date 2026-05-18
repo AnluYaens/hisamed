@@ -87,10 +87,10 @@ export function PatientTabs({
   const visibleTabs = ALL_TABS.filter((t) => allowed.has(t.id));
 
   return (
-    <div className="space-y-4">
-      {/* Tab nav */}
-      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-700">
-        <nav className="-mb-px flex gap-1 overflow-x-auto">
+    <div className="space-y-5">
+      {/* Tab nav — iOS-style segmented control */}
+      <div className="flex items-center justify-between gap-3">
+        <nav className="segmented max-w-full overflow-x-auto">
           {visibleTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -103,15 +103,14 @@ export function PatientTabs({
                   setEditing(false);
                 }}
                 aria-current={isActive ? 'page' : undefined}
+                data-active={isActive}
                 className={[
-                  'flex shrink-0 items-center gap-1.5 px-3.5 py-2.5 text-sm font-medium transition-colors duration-150',
+                  'segmented-item flex shrink-0 items-center gap-1.5 px-3.5 py-2 text-[13px]',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/40',
-                  isActive
-                    ? 'border-b-2 border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-400'
-                    : 'border-b-2 border-transparent text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200',
+                  isActive ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900',
                 ].join(' ')}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon className="h-3.5 w-3.5 shrink-0" />
                 {tab.label}
               </button>
             );
@@ -119,26 +118,24 @@ export function PatientTabs({
         </nav>
 
         {activeTab === 'datos' && allowed.has('datos') && (
-          <div className="pb-1 pl-2">
-            <Button
-              type="button"
-              variant={editing ? 'ghost' : 'outline'}
-              size="sm"
-              onClick={() => setEditing((e) => !e)}
-            >
-              {editing ? (
-                <>
-                  <X className="h-3.5 w-3.5" />
-                  Cancelar
-                </>
-              ) : (
-                <>
-                  <Pencil className="h-3.5 w-3.5" />
-                  Editar datos
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant={editing ? 'ghost' : 'outline'}
+            size="sm"
+            onClick={() => setEditing((e) => !e)}
+          >
+            {editing ? (
+              <>
+                <X className="h-3.5 w-3.5" />
+                Cancelar
+              </>
+            ) : (
+              <>
+                <Pencil className="h-3.5 w-3.5" />
+                Editar datos
+              </>
+            )}
+          </Button>
         )}
       </div>
 
@@ -146,8 +143,8 @@ export function PatientTabs({
       {activeTab === 'datos' && allowed.has('datos') && (
         <div>
           {editing ? (
-            <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
-              <h2 className="mb-4 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+            <div className="glass-card rounded-[22px] p-6">
+              <h2 className="mb-4 text-base font-semibold text-slate-900">
                 Editar datos del paciente
               </h2>
               <PatientForm action={updatePatient} patient={patient} mode="edit" todayStr={todayStr} />
@@ -198,9 +195,11 @@ export function PatientTabs({
 
 function PlaceholderSection({ title, description }: { title: string; description: string }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-white py-16 text-center dark:border-zinc-700 dark:bg-zinc-900">
-      <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{title}</p>
-      <p className="mt-1 max-w-sm text-xs text-zinc-400 dark:text-zinc-500">{description}</p>
+    <div className="glass-card flex flex-col items-center justify-center rounded-[22px] py-14 text-center">
+      <p className="text-[15px] font-semibold text-slate-800">{title}</p>
+      <p className="mt-1 max-w-80 text-[13px] leading-relaxed text-slate-500">
+        {description}
+      </p>
     </div>
   );
 }

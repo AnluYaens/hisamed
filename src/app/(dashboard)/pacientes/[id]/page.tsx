@@ -168,10 +168,10 @@ export default async function PatientDetailPage({ params }: PageProps) {
   const allergiesBanner = allergies?.trim() || null;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      {/* Allergy banner */}
+    <div className="fade-in p-6 sm:p-8 lg:px-10">
+      {/* Allergy banner — kept prominent, frosted danger alert. */}
       {allergiesBanner && (
-        <div className="mb-4 flex items-start gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+        <div className="mb-4 flex items-start gap-3 rounded-2xl border border-red-600/20 bg-red-100/80 px-4 py-3.5 text-[13.5px] font-medium text-red-700 backdrop-blur-md">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
           <span>
             <strong className="font-bold uppercase tracking-wide">Alergias:</strong>{' '}
@@ -183,7 +183,7 @@ export default async function PatientDetailPage({ params }: PageProps) {
       <Breadcrumbs items={patientTrail(patient)} />
 
       {/* Patient header */}
-      <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="glass-card mb-6 rounded-[22px] p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
           <div className="flex flex-col items-center gap-1.5">
@@ -192,8 +192,8 @@ export default async function PatientDetailPage({ params }: PageProps) {
               firstName={patient.firstName}
               lastName={patient.lastName}
               avatarStorageKey={patient.avatarStorageKey}
-              className="h-20 w-20"
-              textClassName="text-xl"
+              className="h-22 w-22 rounded-3xl shadow-[inset_0_0_0_1px_rgba(13,148,136,0.18),0_8px_20px_-8px_rgba(13,148,136,0.35)]"
+              textClassName="text-2xl"
             />
             {canEditPatient && <PatientAvatarUploader patientId={patient.id} />}
             {canEditPatient && patient.avatarStorageKey && (
@@ -201,50 +201,50 @@ export default async function PatientDetailPage({ params }: PageProps) {
             )}
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+            <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.025em] text-slate-900">
               {patient.firstName} {patient.lastName}
             </h1>
-            <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1 text-sm text-slate-500">
               {patientAge} años · {patient.idType === 'cedula' ? 'C.I. ' : ''}
               {patient.idNumber} · {patient.phone?.trim() || 'Sin teléfono'}
             </p>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500">
+            <p className="text-xs text-slate-400">
               {day}/{month}/{year} · {SEX_LABELS[patient.sex] ?? patient.sex}
             </p>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               {patient.bloodType && (
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                <span className="inline-flex items-center rounded-full bg-blue-600/12 px-2.5 py-0.5 text-[11.5px] font-semibold text-blue-700">
                   {patient.bloodType}
                 </span>
               )}
               {patient.rhIncompatibility && (
-                <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                <span className="inline-flex items-center rounded-full bg-amber-600/14 px-2.5 py-0.5 text-[11.5px] font-semibold text-amber-700">
                   ⚠️ Incompatibilidad Rh
                 </span>
               )}
               {activePregnancy && (
-                <span className="inline-flex items-center rounded-full bg-pink-100 px-2 py-0.5 text-xs font-semibold text-pink-800 dark:bg-pink-900/40 dark:text-pink-300">
+                <span className="inline-flex items-center rounded-full bg-pink-700/12 px-2.5 py-0.5 text-[11.5px] font-semibold text-pink-700">
                   🤰 {activePregnancy.weeks} sem + {activePregnancy.days} día{activePregnancy.days !== 1 ? 's' : ''} · {TRIMESTER_LABELS[activePregnancy.trimester]}
                 </span>
               )}
               {staleFUM && (
-                <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                <span className="inline-flex items-center rounded-full bg-amber-600/14 px-2.5 py-0.5 text-[11.5px] font-semibold text-amber-700">
                   ⚠️ Verificar FUM / fin de embarazo
                 </span>
               )}
               {!patient.isActive && (
-                <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                <span className="inline-flex items-center rounded-full bg-zinc-500/12 px-2.5 py-0.5 text-[11.5px] font-semibold text-slate-600">
                   Inactivo
                 </span>
               )}
             </div>
             {(lastVisitLabel || nextApptLabel) && (
-              <div className="mt-2 flex flex-wrap gap-3">
+              <div className="mt-2.5 flex flex-wrap gap-3">
                 {lastVisitLabel && (
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">{lastVisitLabel}</span>
+                  <span className="text-xs text-slate-500">{lastVisitLabel}</span>
                 )}
                 {nextApptLabel && (
-                  <span className="text-xs font-medium text-teal-700 dark:text-teal-400">{nextApptLabel}</span>
+                  <span className="text-xs font-semibold text-teal-700">{nextApptLabel}</span>
                 )}
               </div>
             )}
@@ -276,7 +276,7 @@ export default async function PatientDetailPage({ params }: PageProps) {
         todayStr={todayStr}
         parejaSlot={
           <div className="space-y-4">
-            <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+            <div className="glass-card rounded-[22px] p-6">
               <div className="mb-4 flex items-start gap-4">
                 {/* Partner avatar */}
                 <div className="flex flex-col items-center gap-1.5">
@@ -353,8 +353,8 @@ export default async function PatientDetailPage({ params }: PageProps) {
         }
         adjuntosSlot={
           <div className="space-y-4">
-            <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
-              <h2 className="mb-3 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+            <div className="glass-card rounded-[22px] p-5">
+              <h2 className="mb-3 text-sm font-semibold text-slate-800">
                 Subir adjunto
               </h2>
               <AttachmentUploader patientId={patient.id} />

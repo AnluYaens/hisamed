@@ -122,7 +122,7 @@ export function LoginForm() {
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-2xl border border-red-600/20 bg-red-100/80 px-3.5 py-3 text-[13.5px] text-red-700 backdrop-blur-[12px]"
+          className="flex items-start gap-2 rounded-2xl border border-red-600/20 bg-red-100/80 px-3.5 py-3 text-[13.5px] text-red-700 backdrop-blur-md"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{error}</span>
