@@ -6,7 +6,7 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const inputClass =
-  'flex h-11 w-full rounded-lg border border-zinc-300 bg-white px-3.5 text-sm text-zinc-900 shadow-sm transition-colors placeholder:text-zinc-400 focus-visible:border-teal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/20 disabled:cursor-not-allowed disabled:opacity-50';
+  'flex h-12 w-full rounded-[14px] border border-slate-900/10 bg-white/85 px-4 text-[14.5px] text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-[border-color,box-shadow,background] placeholder:text-slate-400 focus-visible:border-teal-600/50 focus-visible:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/16 disabled:cursor-not-allowed disabled:opacity-50';
 
 // Only accept same-origin absolute paths. Reject protocol-relative URLs
 // (`//evil.com`, `/\evil.com`) that browsers treat as cross-origin, and any
@@ -84,7 +84,7 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
       <div className="space-y-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-zinc-700">
+        <label htmlFor="email" className="text-[13px] font-semibold text-slate-700">
           Correo electrónico
         </label>
         <input
@@ -102,7 +102,7 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="password" className="text-sm font-medium text-zinc-700">
+        <label htmlFor="password" className="text-[13px] font-semibold text-slate-700">
           Contraseña
         </label>
         <input
@@ -122,7 +122,7 @@ export function LoginForm() {
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700"
+          className="flex items-start gap-2 rounded-2xl border border-red-600/20 bg-red-100/80 px-3.5 py-3 text-[13.5px] text-red-700 backdrop-blur-[12px]"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{error}</span>
@@ -132,7 +132,7 @@ export function LoginForm() {
       <Button
         type="submit"
         disabled={busy}
-        className="h-11 w-full text-sm font-semibold shadow-sm"
+        className="h-11 w-full text-sm"
       >
         {busy ? (
           <>
