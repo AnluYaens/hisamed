@@ -119,7 +119,7 @@ function MiniLineChart({
 
 function ChartLegend({ items }: { items: { label: string; color: string }[] }) {
   return (
-    <div className="flex flex-wrap gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+    <div className="flex flex-wrap gap-3 text-xs text-slate-500">
       {items.map((it) => (
         <div key={it.label} className="flex items-center gap-1.5">
           <span
@@ -211,12 +211,12 @@ export function VitalSignsHistory({
 
   if (records.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-zinc-200 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
-        <Activity className="mx-auto h-6 w-6 text-zinc-300 dark:text-zinc-600" />
-        <p className="mt-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+      <div className="glass-card flex flex-col items-center rounded-[22px] p-10 text-center">
+        <span className="flex h-16 w-16 items-center justify-center rounded-[22px] bg-[linear-gradient(135deg,#F0FDFA,#CCFBF1)] text-teal-600 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.15),0_8px_18px_-8px_rgba(13,148,136,0.35)]"><Activity className="h-7 w-7" /></span>
+        <p className="mt-3 text-[15px] font-semibold text-slate-800">
           Sin signos vitales registrados
         </p>
-        <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+        <p className="mt-1 text-[13px] text-slate-500">
           Los signos vitales aparecerán aquí a medida que se registren al inicio de cada consulta.
         </p>
       </div>
@@ -229,12 +229,12 @@ export function VitalSignsHistory({
   return (
     <div className="space-y-4">
       {/* Latest snapshot */}
-      <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="glass-card rounded-[22px] p-5.5">
         <div className="mb-3 flex items-baseline justify-between">
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+          <h3 className="text-sm font-semibold text-slate-800">
             Últimos signos vitales
           </h3>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500">
+          <p className="text-xs text-slate-400">
             {dateFmt.format(latest.recordedAt)} · {latest.recordedByName}
           </p>
         </div>
@@ -249,7 +249,7 @@ export function VitalSignsHistory({
           <Stat label="IMC" value={fmt(latest.bmi)} unit="" />
         </div>
         {latest.notes && (
-          <p className="mt-3 rounded-md bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800/50 dark:text-zinc-400">
+          <p className="mt-3 rounded-xl bg-slate-900/4 px-3 py-2 text-xs text-slate-600">
             {latest.notes}
           </p>
         )}
@@ -257,8 +257,8 @@ export function VitalSignsHistory({
 
       {/* Charts (only when ≥2 records exist for at least one metric) */}
       {hasAnyChart && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-          <h3 className="mb-4 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+        <div className="glass-card rounded-[22px] p-5.5">
+          <h3 className="mb-4 text-sm font-semibold text-slate-800">
             Evolución
           </h3>
           <div className="space-y-6">
@@ -281,9 +281,9 @@ export function VitalSignsHistory({
       )}
 
       {/* History list */}
-      <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-        <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-3 dark:border-zinc-700">
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+      <div className="glass-surface rounded-[20px]">
+        <div className="flex items-center justify-between border-b border-slate-900/6 px-5 py-3">
+          <h3 className="text-sm font-semibold text-slate-800">
             Historial ({records.length})
           </h3>
           {records.length > 5 && (
@@ -306,22 +306,22 @@ export function VitalSignsHistory({
             </button>
           )}
         </div>
-        <ul className="divide-y divide-zinc-200 dark:divide-zinc-700">
+        <ul className="divide-y divide-slate-900/6">
           {visibleHistory.map((r) => {
             const isUnassigned = r.clinicalNoteId == null;
             return (
               <li key={r.id} className="px-5 py-3 text-sm">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="font-medium text-zinc-700 dark:text-zinc-200">
+                  <span className="font-semibold text-slate-700">
                     {dateFmt.format(r.recordedAt)}
                   </span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                  <span className="text-xs text-slate-400">
                     {r.recordedByName}
                     {isUnassigned && ' · sin nota asociada'}
                   </span>
                 </div>
                 <div className="mt-1 flex flex-wrap items-end justify-between gap-2">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
                     {r.systolicBp != null && r.diastolicBp != null && (
                       <Span k="TA" v={`${r.systolicBp}/${r.diastolicBp}`} u="mmHg" />
                     )}
@@ -364,7 +364,7 @@ function ChartBlock({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{title}</p>
+        <p className="text-xs font-semibold text-slate-600">{title}</p>
         {legend && <ChartLegend items={legend} />}
       </div>
       <MiniLineChart series={series} />
@@ -382,14 +382,14 @@ function Stat({
   unit: string;
 }) {
   return (
-    <div className="rounded-lg border border-zinc-100 bg-zinc-50/50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-800/30">
-      <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+    <div className="rounded-xl border border-slate-900/6 bg-slate-50/60 px-3 py-2">
+      <p className="text-[10px] uppercase tracking-wider text-slate-400">
         {label}
       </p>
-      <p className="mt-0.5 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+      <p className="mt-0.5 text-sm font-semibold text-slate-800">
         {value}
         {value !== '—' && unit && (
-          <span className="ml-1 text-xs font-normal text-zinc-400 dark:text-zinc-500">
+          <span className="ml-1 text-xs font-normal text-slate-400">
             {unit}
           </span>
         )}
@@ -401,9 +401,9 @@ function Stat({
 function Span({ k, v, u }: { k: string; v: string | number; u: string }) {
   return (
     <span>
-      <span className="text-zinc-400 dark:text-zinc-500">{k}:</span>{' '}
-      <span className="font-medium text-zinc-700 dark:text-zinc-300">{v}</span>
-      {u && <span className="text-zinc-400 dark:text-zinc-500"> {u}</span>}
+      <span className="text-slate-400">{k}:</span>{' '}
+      <span className="font-medium text-slate-700">{v}</span>
+      {u && <span className="text-slate-400"> {u}</span>}
     </span>
   );
 }

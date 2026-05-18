@@ -71,7 +71,7 @@ export default async function ClinicalNoteDetailPage({ params }: PageProps) {
   const canViewInternalNotes = session.role === 'doctor';
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="fade-in p-6 sm:p-8 lg:px-10">
       <Breadcrumbs
         items={patientTrail(
           { id, firstName: note.patient.firstName, lastName: note.patient.lastName },
@@ -81,10 +81,10 @@ export default async function ClinicalNoteDetailPage({ params }: PageProps) {
       />
 
       <div className="mb-6">
-        <p className="text-xs uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+        <p className="text-xs font-semibold uppercase tracking-[0.06em] text-slate-400">
           {note.patient.firstName} {note.patient.lastName} · C.I. {note.patient.idNumber}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+        <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-[-0.025em] text-slate-900">
           {isOwnUnsignedByDoctor ? 'Editar nota de evolución' : 'Nota de evolución'}
         </h1>
       </div>
@@ -95,7 +95,7 @@ export default async function ClinicalNoteDetailPage({ params }: PageProps) {
       {relevantVitalSigns.length > 0 && (
         <section className="mb-6 space-y-4">
           {isOwnUnsignedByDoctor && hasUnassigned && (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+            <div className="rounded-2xl border border-blue-600/20 bg-blue-100/70 px-4 py-3 text-sm text-blue-900 backdrop-blur-md">
               Hay signos vitales del paciente sin nota asociada. Usa el botón
               &ldquo;Asociar a esta nota&rdquo; para vincularlos a esta consulta.
             </div>
@@ -154,11 +154,11 @@ export default async function ClinicalNoteDetailPage({ params }: PageProps) {
           upload; everyone else (admin, or doctor viewing a signed/other note)
           still sees the list + download. */}
       <section className="mt-8 space-y-4">
-        <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+        <h2 className="text-sm font-semibold text-slate-800">
           Adjuntos de la nota
         </h2>
         {isOwnUnsignedByDoctor && (
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+          <div className="glass-card rounded-[22px] p-5">
             <AttachmentUploader patientId={note.patientId} clinicalNoteId={note.id} />
           </div>
         )}

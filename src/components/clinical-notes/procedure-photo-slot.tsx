@@ -117,9 +117,9 @@ export function ProcedurePhotoSlot({
   }
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900">
+    <div className="glass-surface rounded-2xl p-3">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{label}</span>
+        <span className="text-xs font-semibold text-slate-700">{label}</span>
         {attachmentId && (
           <button
             type="button"
@@ -139,7 +139,7 @@ export function ProcedurePhotoSlot({
           href={`/api/attachments/${attachmentId}/download`}
           target="_blank"
           rel="noreferrer"
-          className="block overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-700"
+          className="block overflow-hidden rounded-xl border border-slate-900/8"
         >
           {/* Native <img> is intentional: download endpoint streams bytes,
               and it sits on the same origin so next/image's optimizer would
@@ -156,7 +156,7 @@ export function ProcedurePhotoSlot({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={!canUpload}
-          className="flex h-32 w-full flex-col items-center justify-center gap-1 rounded-md border border-dashed border-zinc-300 bg-zinc-50 text-xs text-zinc-500 hover:border-zinc-400 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+          className="flex h-32 w-full flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-900/12 bg-slate-50/60 text-xs text-slate-500 transition-colors hover:border-teal-400 hover:bg-teal-50/40 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isUploading ? (
             <>

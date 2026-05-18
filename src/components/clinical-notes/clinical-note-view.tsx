@@ -92,11 +92,11 @@ function SectionCard({
   return (
     <section
       className={[
-        'rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900',
+        'glass-card rounded-[22px] p-5.5',
         className ?? '',
       ].join(' ')}
     >
-      <h2 className="mb-3 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+      <h2 className="mb-3 text-sm font-semibold text-slate-800">
         {title}
       </h2>
       {children}
@@ -107,13 +107,13 @@ function SectionCard({
 function TextBlock({ value, placeholder }: { value: string | null; placeholder?: string }) {
   if (!value) {
     return (
-      <p className="text-sm italic text-zinc-400 dark:text-zinc-500">
+      <p className="text-sm italic text-slate-400">
         {placeholder ?? 'Sin información registrada.'}
       </p>
     );
   }
   return (
-    <p className="whitespace-pre-wrap text-sm text-zinc-800 dark:text-zinc-200">{value}</p>
+    <p className="whitespace-pre-wrap text-sm text-slate-800">{value}</p>
   );
 }
 
@@ -129,15 +129,15 @@ function FindingRow({
   if (!value && !note) return null;
   return (
     <div className="grid gap-1 py-2 sm:grid-cols-[180px_1fr]">
-      <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
+      <span className="text-xs text-slate-500">{label}</span>
       <div>
         {value && (
-          <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          <span className="text-sm font-medium text-slate-900">
             {value}
           </span>
         )}
         {note && (
-          <p className="mt-0.5 text-sm text-zinc-700 dark:text-zinc-300">{note}</p>
+          <p className="mt-0.5 text-sm text-slate-700">{note}</p>
         )}
       </div>
     </div>
@@ -170,7 +170,7 @@ function PhotoThumb({
         href={`/api/attachments/${attachmentId}/download`}
         target="_blank"
         rel="noreferrer"
-        className="block overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-700"
+        className="block overflow-hidden rounded-xl border border-slate-900/8"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -179,7 +179,7 @@ function PhotoThumb({
           className="h-32 w-full object-cover"
         />
       </a>
-      <figcaption className="text-xs text-zinc-500 dark:text-zinc-400">{caption}</figcaption>
+      <figcaption className="text-xs text-slate-500">{caption}</figcaption>
     </figure>
   );
 }
@@ -203,10 +203,10 @@ function ProcedureCard({
   );
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-900/40">
-      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{label}</p>
+    <div className="rounded-2xl border border-slate-900/6 bg-slate-50/60 p-4">
+      <p className="text-sm font-semibold text-slate-900">{label}</p>
       {procedure.notes && (
-        <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
+        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
           {procedure.notes}
         </p>
       )}
@@ -236,10 +236,10 @@ function GynecologicalExamReadOnly({
     <div className="space-y-5">
       {(exam.labia_majora || exam.labia_minora || exam.vulva || exam.perineal) && (
         <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
             Examen externo
           </p>
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          <div className="divide-y divide-slate-900/6">
             <FindingRow
               label="Labios mayores"
               value={
@@ -270,10 +270,10 @@ function GynecologicalExamReadOnly({
 
       {(exam.vagina || exam.cervix || exam.discharge) && (
         <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
             Examen con espéculo
           </p>
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          <div className="divide-y divide-slate-900/6">
             <FindingRow
               label="Vagina"
               value={exam.vagina?.value ? VAGINA_LABELS[exam.vagina.value] : null}
@@ -295,10 +295,10 @@ function GynecologicalExamReadOnly({
 
       {(hasUterusData || exam.right_adnexa || exam.left_adnexa || exam.douglas_pouch) && (
         <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
             Tacto bimanual
           </p>
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          <div className="divide-y divide-slate-900/6">
             {uterus.size && (
               <FindingRow
                 label="Útero · tamaño"
@@ -351,7 +351,7 @@ function GynecologicalExamReadOnly({
 
       {procedures.length > 0 && (
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
             Procedimientos realizados
           </p>
           <div className="space-y-3">
@@ -410,10 +410,10 @@ function OvaryReadOnly({
     .join(' × ');
   return (
     <div>
-      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
         {label}
       </p>
-      <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+      <div className="divide-y divide-slate-900/6">
         {dims && <FindingRow label="Dimensiones (mm)" value={dims} note={null} />}
         {o.volume_ml != null && (
           <FindingRow label="Volumen" value={`${o.volume_ml.toFixed(2)} ml`} note={null} />
@@ -469,7 +469,7 @@ function UltrasoundImageThumb({
         href={`/api/attachments/${attachment.id}/download`}
         target="_blank"
         rel="noreferrer"
-        className="block overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-700"
+        className="block overflow-hidden rounded-xl border border-slate-900/8"
       >
         {isVideo ? (
           // Native <video> with the source pointed at the download endpoint.
@@ -492,7 +492,7 @@ function UltrasoundImageThumb({
           />
         )}
       </a>
-      <figcaption className="flex items-center gap-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
+      <figcaption className="flex items-center gap-1 truncate text-xs text-slate-500">
         {isVideo && <Film className="h-3 w-3 shrink-0" />}
         <span className="truncate" title={attachment.fileName}>
           {attachment.fileName}
@@ -539,15 +539,15 @@ function UltrasoundReadOnly({
         bladder?.note ||
         gyn?.douglas_fluid) && (
         <div className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
             Ecografía ginecológica
           </p>
           {hasUterus && (
             <div>
-              <p className="mb-1 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+              <p className="mb-1 text-xs font-semibold text-slate-600">
                 Útero
               </p>
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <div className="divide-y divide-slate-900/6">
                 {uterus?.position && (
                   <FindingRow
                     label="Posición"
@@ -600,10 +600,10 @@ function UltrasoundReadOnly({
       {/* Obstetric */}
       {obstetricHasContent(obs) && (
         <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
             Ecografía obstétrica
           </p>
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          <div className="divide-y divide-slate-900/6">
             {obs?.fetal_count && (
               <FindingRow
                 label="Número de fetos"
@@ -685,7 +685,7 @@ function UltrasoundReadOnly({
       {/* Image / video gallery */}
       {attachments.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
             Imágenes del eco
           </p>
           <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
@@ -714,9 +714,9 @@ function SpecialtyRow({
       : `${value}${unit ? ` ${unit}` : ''}`;
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
-      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-        {display ?? <span className="italic text-zinc-400 dark:text-zinc-500">—</span>}
+      <span className="text-xs text-slate-500">{label}</span>
+      <span className="text-sm font-medium text-slate-900">
+        {display ?? <span className="italic text-slate-400">—</span>}
       </span>
     </div>
   );
@@ -736,16 +736,16 @@ export function ClinicalNoteView({
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="glass-card rounded-[22px] p-5.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              <h1 className="text-lg font-semibold text-slate-900">
                 Nota de evolución
               </h1>
               <ClinicalNoteStatusBadge isSigned={note.isSigned} />
             </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
               <span className="inline-flex items-center gap-1">
                 <CalendarDays className="h-3.5 w-3.5" />
                 {formatDate(note.noteDate)}
@@ -765,8 +765,8 @@ export function ClinicalNoteView({
         </div>
 
         {note.chiefComplaint && (
-          <p className="mt-4 text-sm text-zinc-700 dark:text-zinc-300">
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
+          <p className="mt-4 text-sm text-slate-700">
+            <span className="font-medium text-slate-900">
               Motivo de consulta:{' '}
             </span>
             {note.chiefComplaint}
@@ -795,11 +795,11 @@ export function ClinicalNoteView({
             {note.diagnoses.map((d, i) => (
               <li key={i} className="flex flex-wrap items-center gap-2">
                 {d.code && (
-                  <span className="inline-flex shrink-0 items-center rounded-full bg-blue-100 px-2.5 py-0.5 font-mono text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                  <span className="inline-flex shrink-0 items-center rounded-full bg-blue-600/12 px-2.5 py-0.5 font-mono text-xs font-semibold text-blue-700">
                     {d.code}
                   </span>
                 )}
-                <span className="text-sm text-zinc-800 dark:text-zinc-200">{d.text}</span>
+                <span className="text-sm text-slate-800">{d.text}</span>
               </li>
             ))}
           </ul>
@@ -834,7 +834,7 @@ export function ClinicalNoteView({
 
           {sp.ultrasound_findings && (
             <div className="mt-5">
-              <p className="mb-1 text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="mb-1 text-xs text-slate-500">
                 Hallazgos ecográficos
               </p>
               <TextBlock value={sp.ultrasound_findings ?? null} />
@@ -842,7 +842,7 @@ export function ClinicalNoteView({
           )}
           {sp.procedure_performed && (
             <div className="mt-5">
-              <p className="mb-1 text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="mb-1 text-xs text-slate-500">
                 Procedimiento realizado
               </p>
               <TextBlock value={sp.procedure_performed ?? null} />
@@ -850,7 +850,7 @@ export function ClinicalNoteView({
           )}
           {sp.treatment_protocol && (
             <div className="mt-5">
-              <p className="mb-1 text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="mb-1 text-xs text-slate-500">
                 Protocolo de tratamiento
               </p>
               <TextBlock value={sp.treatment_protocol ?? null} />
@@ -880,14 +880,14 @@ export function ClinicalNoteView({
           value itself is already NULLed in the query for any other role,
           but we also skip the whole section for clarity. */}
       {canViewInternalNotes && note.internalNotes && (
-        <section className="rounded-xl border border-amber-200 bg-amber-50/40 p-5 dark:border-amber-900/40 dark:bg-amber-950/10">
+        <section className="rounded-[22px] border border-amber-600/20 bg-amber-100/55 p-5 backdrop-blur-md">
           <div className="mb-3 flex items-start gap-2">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <h2 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
               Notas internas (solo visibles para médicos)
             </h2>
           </div>
-          <p className="whitespace-pre-wrap text-sm text-zinc-800 dark:text-zinc-200">
+          <p className="whitespace-pre-wrap text-sm text-slate-800">
             {note.internalNotes}
           </p>
         </section>

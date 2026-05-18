@@ -10,8 +10,7 @@ export function ClinicalNoteStatusBadge({ isSigned, className }: ClinicalNoteSta
     return (
       <span
         className={[
-          'inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700',
-          'dark:bg-emerald-900/30 dark:text-emerald-300',
+          'inline-flex items-center gap-1 rounded-full bg-green-700/14 px-2.5 py-0.5 text-[11.5px] font-semibold text-green-700',
           className ?? '',
         ].join(' ')}
       >
@@ -24,8 +23,7 @@ export function ClinicalNoteStatusBadge({ isSigned, className }: ClinicalNoteSta
   return (
     <span
       className={[
-        'inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700',
-        'dark:bg-amber-900/30 dark:text-amber-300',
+        'inline-flex items-center gap-1 rounded-full bg-amber-600/14 px-2.5 py-0.5 text-[11.5px] font-semibold text-amber-700',
         className ?? '',
       ].join(' ')}
     >

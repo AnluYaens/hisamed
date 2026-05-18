@@ -99,32 +99,26 @@ export const PLACENTA_GRADE_LABELS: Record<(typeof placentaGradeValues)[number],
 
 function selectClass(): string {
   return [
-    'h-9 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm shadow-sm outline-none transition-colors',
-    'focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20',
+    'glass-input h-9 w-full rounded-[14px] px-3 text-sm text-slate-900 outline-none',
     'disabled:cursor-not-allowed disabled:opacity-60',
-    'dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100',
   ].join(' ');
 }
 
 function inputClass(): string {
   return [
-    'h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition-colors',
-    'placeholder:text-zinc-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20',
-    'disabled:cursor-not-allowed disabled:opacity-60',
-    'dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500',
+    'glass-input h-9 w-full rounded-[14px] px-3.5 text-sm text-slate-900 outline-none',
+    'placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60',
   ].join(' ');
 }
 
 function readonlyInputClass(): string {
-  return `${inputClass()} bg-zinc-50 dark:bg-zinc-800`;
+  return `${inputClass()} bg-slate-900/4`;
 }
 
 function textareaClass(): string {
   return [
-    'w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition-colors resize-y',
-    'placeholder:text-zinc-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20',
-    'disabled:cursor-not-allowed disabled:opacity-60',
-    'dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500',
+    'glass-input w-full resize-y rounded-[14px] px-3.5 py-2 text-sm text-slate-900 outline-none',
+    'placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60',
   ].join(' ');
 }
 
@@ -149,11 +143,11 @@ function CollapsibleCard({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <section className="glass-card rounded-[20px]">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-2 rounded-t-xl px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+        className="flex w-full items-center justify-between gap-2 rounded-t-[20px] px-5 py-4 text-left transition-colors hover:bg-teal-600/4"
         aria-expanded={open}
       >
         <div>
@@ -169,7 +163,7 @@ function CollapsibleCard({
         )}
       </button>
       {open && (
-        <div className="border-t border-zinc-100 px-5 py-4 dark:border-zinc-800">{children}</div>
+        <div className="border-t border-slate-900/6 px-5 py-4">{children}</div>
       )}
     </section>
   );
@@ -455,7 +449,7 @@ function UltrasoundGallery({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={!canUpload}
-          className="inline-flex h-9 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="glass-input inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-sm font-semibold text-slate-700 outline-none transition-colors hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isUploading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -482,7 +476,7 @@ function UltrasoundGallery({
       )}
 
       {attachmentIds.length === 0 ? (
-        <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50 text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+        <div className="flex h-24 items-center justify-center rounded-2xl border border-dashed border-slate-900/12 bg-slate-50/60 text-xs text-slate-500">
           Sin imágenes adjuntas todavía.
         </div>
       ) : (
@@ -493,10 +487,10 @@ function UltrasoundGallery({
             return (
               <li
                 key={id}
-                className="group relative overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"
+                className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white/70"
               >
                 {isVideo ? (
-                  <div className="relative flex h-32 items-center justify-center bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                  <div className="relative flex h-32 items-center justify-center bg-slate-900/5 text-slate-500">
                     <Film className="h-8 w-8" />
                     <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
                       video
@@ -517,7 +511,7 @@ function UltrasoundGallery({
                     />
                   </a>
                 )}
-                <div className="flex items-center justify-between gap-2 border-t border-zinc-100 px-2 py-1.5 dark:border-zinc-800">
+                <div className="flex items-center justify-between gap-2 border-t border-slate-900/6 px-2 py-1.5">
                   <span
                     className="truncate text-[11px] text-zinc-600 dark:text-zinc-400"
                     title={meta?.fileName ?? id}

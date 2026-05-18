@@ -37,25 +37,17 @@ import { consultationReasonPhrases } from '@/lib/constants/medical-phrases';
 
 function fieldClass(hasError = false) {
   return [
-    'flex h-9 w-full rounded-lg border bg-white px-3 text-sm shadow-sm outline-none transition-colors',
-    'placeholder:text-zinc-400 focus:ring-2',
-    'dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500',
-    'disabled:cursor-not-allowed disabled:opacity-60',
-    hasError
-      ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 dark:border-red-700'
-      : 'border-zinc-200 focus:border-teal-600 focus:ring-teal-600/20 dark:border-zinc-700 dark:focus:border-teal-600',
+    'glass-input flex h-9 w-full rounded-[14px] px-3.5 text-sm text-slate-900 outline-none',
+    'placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60',
+    hasError ? 'border-red-400 focus:ring-red-500/20' : '',
   ].join(' ');
 }
 
 function textareaClass(hasError = false) {
   return [
-    'w-full rounded-lg border bg-white px-3 py-2 text-sm shadow-sm outline-none transition-colors resize-y',
-    'placeholder:text-zinc-400 focus:ring-2',
-    'dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500',
-    'disabled:cursor-not-allowed disabled:opacity-60',
-    hasError
-      ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 dark:border-red-700'
-      : 'border-zinc-200 focus:border-teal-600 focus:ring-teal-600/20 dark:border-zinc-700 dark:focus:border-teal-600',
+    'glass-input w-full resize-y rounded-[14px] px-3.5 py-2 text-sm text-slate-900 outline-none',
+    'placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60',
+    hasError ? 'border-red-400 focus:ring-red-500/20' : '',
   ].join(' ');
 }
 
@@ -63,7 +55,7 @@ function Label({ htmlFor, children }: { htmlFor?: string; children: React.ReactN
   return (
     <label
       htmlFor={htmlFor}
-      className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+      className="block text-[13px] font-semibold text-slate-700"
     >
       {children}
     </label>
@@ -461,26 +453,26 @@ export function ClinicalNoteForm({
       >
         {/* Status banners */}
         {state && !state.success && (
-          <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+          <div className="flex items-start gap-2.5 rounded-lg border border-red-600/20 bg-red-100/70 backdrop-blur-md px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{state.error}</p>
           </div>
         )}
         {signState && !signState.success && (
-          <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+          <div className="flex items-start gap-2.5 rounded-lg border border-red-600/20 bg-red-100/70 backdrop-blur-md px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{signState.error}</p>
           </div>
         )}
         {showDraftSuccess && (
-          <div className="flex items-start gap-2.5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-900/50 dark:bg-green-950/30 dark:text-green-400">
+          <div className="flex items-start gap-2.5 rounded-lg border border-green-600/20 bg-green-100/70 backdrop-blur-md px-4 py-3 text-sm text-green-700 dark:border-green-900/50 dark:bg-green-950/30 dark:text-green-400">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             <p>Borrador guardado correctamente</p>
           </div>
         )}
 
         {/* ── Header: fecha + diagnóstico ─────────────────────────────────── */}
-        <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+        <section className="glass-card rounded-[22px] p-5.5">
           <h2 className="mb-4 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
             Información general
           </h2>
@@ -524,7 +516,7 @@ export function ClinicalNoteForm({
                     const v = e.target.value;
                     if (v) setText('chief_complaint', v);
                   }}
-                  className="h-9 max-w-[180px] shrink-0 rounded-lg border border-zinc-200 bg-white px-2 text-sm text-zinc-600 shadow-sm outline-none transition-colors hover:bg-zinc-50 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  className="h-9 max-w-[180px] shrink-0 glass-input rounded-full px-3 text-sm text-slate-600 outline-none"
                 >
                   <option value="">Frecuentes…</option>
                   {consultationReasonPhrases.map((r) => (
@@ -539,7 +531,7 @@ export function ClinicalNoteForm({
         </section>
 
         {/* ── SOAP ────────────────────────────────────────────────────────── */}
-        <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+        <section className="glass-card rounded-[22px] p-5.5">
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
               Nota SOAP
@@ -605,7 +597,7 @@ export function ClinicalNoteForm({
         </section>
 
         {/* ── Diagnóstico ─────────────────────────────────────────────────── */}
-        <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+        <section className="glass-card rounded-[22px] p-5.5">
           <div className="mb-4 flex items-baseline justify-between">
             <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
               Diagnóstico(s)
@@ -621,7 +613,7 @@ export function ClinicalNoteForm({
         </section>
 
         {/* ── specialty_data — consulta ginecológica ──────────────────────── */}
-        <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+        <section className="glass-card rounded-[22px] p-5.5">
           <h2 className="mb-4 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
             Datos de consulta ginecológica
           </h2>
@@ -684,7 +676,7 @@ export function ClinicalNoteForm({
                   value={specialty.bmi}
                   readOnly
                   placeholder="—"
-                  className={`${fieldClass()} bg-zinc-50 dark:bg-zinc-800`}
+                  className={`${fieldClass()} bg-slate-900/4`}
                   aria-describedby="sp_bmi_hint"
                 />
                 <p id="sp_bmi_hint" className="text-xs text-zinc-400 dark:text-zinc-500">
@@ -867,7 +859,7 @@ export function ClinicalNoteForm({
         </section>
 
         {/* ── internal_notes ──────────────────────────────────────────────── */}
-        <section className="rounded-xl border border-amber-200 bg-amber-50/40 p-5 dark:border-amber-900/40 dark:bg-amber-950/10">
+        <section className="rounded-xl border border-amber-600/20 bg-amber-100/70 backdrop-blur-md/40 p-5 dark:border-amber-900/40 dark:bg-amber-950/10">
           <div className="mb-3 flex items-start gap-2">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <div>
@@ -892,7 +884,7 @@ export function ClinicalNoteForm({
         </section>
 
         {/* ── Acciones ────────────────────────────────────────────────────── */}
-        <div className="sticky bottom-0 -mx-4 flex flex-col gap-3 border-t border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:mx-0 sm:flex-row sm:justify-end dark:border-zinc-700 dark:bg-zinc-900/95">
+        <div className="sticky bottom-0 -mx-4 flex flex-col gap-3 border-t border-slate-900/6 bg-white/70 px-4 py-3 backdrop-blur-2xl sm:mx-0 sm:flex-row sm:justify-end">
           <Button type="submit" variant="outline" size="lg" disabled={isPending}>
             {isCreating || isUpdating ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -955,7 +947,7 @@ function ConfirmSignDialog({
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="w-full max-w-md rounded-[22px] border border-white/60 bg-white/90 p-6 shadow-[0_30px_60px_-20px_rgba(15,23,42,0.4)] backdrop-blur-2xl">
         <div className="mb-3 flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
             <AlertTriangle className="h-5 w-5" />

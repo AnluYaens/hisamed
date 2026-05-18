@@ -118,34 +118,28 @@ export const PROCEDURE_LABELS: Record<ProcedureType, string> = {
 
 function selectClass(): string {
   return [
-    'h-9 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm shadow-sm outline-none transition-colors',
-    'focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20',
+    'glass-input h-9 w-full rounded-[14px] px-3 text-sm text-slate-900 outline-none',
     'disabled:cursor-not-allowed disabled:opacity-60',
-    'dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100',
   ].join(' ');
 }
 
 function inputClass(): string {
   return [
-    'h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition-colors',
-    'placeholder:text-zinc-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20',
-    'disabled:cursor-not-allowed disabled:opacity-60',
-    'dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500',
+    'glass-input h-9 w-full rounded-[14px] px-3.5 text-sm text-slate-900 outline-none',
+    'placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60',
   ].join(' ');
 }
 
 function textareaClass(): string {
   return [
-    'w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition-colors resize-y',
-    'placeholder:text-zinc-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20',
-    'disabled:cursor-not-allowed disabled:opacity-60',
-    'dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500',
+    'glass-input w-full resize-y rounded-[14px] px-3.5 py-2 text-sm text-slate-900 outline-none',
+    'placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60',
   ].join(' ');
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+    <span className="block text-xs font-semibold text-slate-700">
       {children}
     </span>
   );
@@ -220,26 +214,26 @@ function CollapsibleCard({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <section className="glass-card rounded-[20px]">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-2 rounded-t-xl px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+        className="flex w-full items-center justify-between gap-2 rounded-t-[20px] px-5 py-4 text-left transition-colors hover:bg-teal-600/4"
         aria-expanded={open}
       >
         <div>
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">{title}</h3>
+          <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
           {description && (
-            <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">{description}</p>
+            <p className="mt-0.5 text-xs text-slate-400">{description}</p>
           )}
         </div>
         {open ? (
-          <ChevronDown className="h-4 w-4 text-zinc-400" />
+          <ChevronDown className="h-4 w-4 text-slate-400" />
         ) : (
-          <ChevronRight className="h-4 w-4 text-zinc-400" />
+          <ChevronRight className="h-4 w-4 text-slate-400" />
         )}
       </button>
-      {open && <div className="border-t border-zinc-100 px-5 py-4 dark:border-zinc-800">{children}</div>}
+      {open && <div className="border-t border-slate-900/6 px-5 py-4">{children}</div>}
     </section>
   );
 }
@@ -538,7 +532,7 @@ export function GynecologicalExamSection({
             return (
               <label
                 key={t}
-                className="flex cursor-pointer items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm hover:bg-zinc-50 has-checked:border-teal-400 has-checked:bg-teal-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800/40 dark:has-checked:border-teal-700 dark:has-checked:bg-teal-950/30"
+                className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-900/8 bg-white/70 px-3 py-2 text-sm transition-colors hover:bg-white has-checked:border-teal-400 has-checked:bg-teal-50"
               >
                 <input
                   type="checkbox"
@@ -560,7 +554,7 @@ export function GynecologicalExamSection({
             {procedures.map((p) => (
               <div
                 key={p.type}
-                className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900/40"
+                className="rounded-2xl border border-slate-900/6 bg-slate-50/60 p-4"
               >
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">

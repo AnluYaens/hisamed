@@ -50,9 +50,9 @@ export default async function NewClinicalNotePage({ params, searchParams }: Page
   const appointmentId = typeof rawAppt === 'string' ? rawAppt : null;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="fade-in p-6 sm:p-8 lg:px-10">
       {allergies && (
-        <div className="mb-4 flex items-start gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+        <div className="mb-4 flex items-start gap-3 rounded-2xl border border-red-600/20 bg-red-100/80 px-4 py-3.5 text-[13.5px] font-medium text-red-700 backdrop-blur-md">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
           <span>
             <strong className="font-bold uppercase tracking-wide">Alergias:</strong> {allergies}
@@ -68,10 +68,10 @@ export default async function NewClinicalNotePage({ params, searchParams }: Page
       />
 
       <div className="mb-6">
-        <p className="text-xs uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+        <p className="text-xs font-semibold uppercase tracking-[0.06em] text-slate-400">
           {patient.firstName} {patient.lastName}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+        <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-[-0.025em] text-slate-900">
           Nueva nota de evolución
         </h1>
       </div>
@@ -83,11 +83,11 @@ export default async function NewClinicalNotePage({ params, searchParams }: Page
         <VitalSignsForm patientId={patient.id} clinicalNoteId={null} compact />
         {unassignedVitalSigns.length > 0 && (
           <>
-            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+            <div className="rounded-2xl border border-blue-600/20 bg-blue-100/70 px-4 py-3 text-sm text-blue-900 backdrop-blur-md">
               <p className="font-medium">
                 Hay {unassignedVitalSigns.length === 1 ? 'un registro' : `${unassignedVitalSigns.length} registros`} de signos vitales sin nota asociada
               </p>
-              <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
+              <p className="mt-1 text-xs text-blue-700">
                 Guarda el borrador para habilitar el botón &ldquo;Asociar a esta nota&rdquo;.
               </p>
             </div>
