@@ -223,18 +223,72 @@
     -webkit-backdrop-filter: blur(20px);
   }
 
-  /* Branded greeting card — the only solid-color card in the app. */
+  /* Branded greeting card — the only solid-color card in the app. Two
+     blurred orbs bleed in from the corners via pseudo-elements. */
   .greeting-card {
+    position: relative;
+    overflow: hidden;
     background: linear-gradient(
       135deg,
       rgba(13, 148, 136, 0.92),
       rgba(15, 118, 110, 0.88) 60%,
       rgba(15, 23, 42, 0.92)
     );
+    border: 1px solid rgba(255, 255, 255, 0.18);
     box-shadow:
       0 1px 0 rgba(255, 255, 255, 0.22) inset,
       0 22px 48px -18px rgba(13, 148, 136, 0.45),
       0 6px 14px -4px rgba(15, 23, 42, 0.15);
+  }
+  .greeting-card::before {
+    content: "";
+    position: absolute;
+    right: -100px;
+    top: -100px;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(
+      closest-side,
+      rgba(94, 234, 212, 0.55),
+      transparent 70%
+    );
+    filter: blur(40px);
+    pointer-events: none;
+  }
+  .greeting-card::after {
+    content: "";
+    position: absolute;
+    left: -60px;
+    bottom: -120px;
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(
+      closest-side,
+      rgba(125, 211, 252, 0.4),
+      transparent 70%
+    );
+    filter: blur(40px);
+    pointer-events: none;
+  }
+  .greeting-card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Next-patient highlight card — soft teal-tinted glass. */
+  .next-card {
+    background: linear-gradient(
+      135deg,
+      rgba(240, 253, 250, 0.85),
+      rgba(204, 251, 241, 0.7)
+    );
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(13, 148, 136, 0.18);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.6) inset,
+      0 10px 26px -10px rgba(13, 148, 136, 0.3),
+      0 2px 6px -2px rgba(15, 23, 42, 0.05);
   }
 
   /* Stat card — frosted tile with a per-card color wash via --card-tint. */

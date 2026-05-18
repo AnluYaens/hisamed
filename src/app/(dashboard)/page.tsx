@@ -11,6 +11,8 @@ import { getAppointmentsByDate } from '@/queries/appointments';
 import { todayInTz, parseDateStr } from '@/lib/dates';
 import { TodayQueue } from '@/components/appointments/today-queue';
 import { StatusBadge } from '@/components/appointments/status-badge';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 function formatTime(time: string): string {
   const [h, m] = time.split(':');
@@ -66,38 +68,36 @@ export default async function DashboardPage() {
   const firstName = user?.fullName?.split(' ')[0] ?? '';
   const displayName = isDoctor ? `Dr. ${firstName}` : firstName;
 
+  // Each stat card carries a faint full-bleed color wash (--card-tint) and a
+  // solid-gradient icon tile, so the dashboard reads at a glance.
   const statCards = [
     {
       label: 'Pacientes activos',
       value: stats.activePatients,
       icon: Users,
-      color: 'text-teal-600',
-      bg: 'bg-teal-50',
-      ring: 'ring-teal-100',
+      tile: 'linear-gradient(135deg, #5EEAD4, #14B8A6)',
+      tint: 'linear-gradient(135deg, rgba(94,234,212,0.18), transparent 60%)',
     },
     {
       label: 'Citas hoy',
       value: stats.todayTotal,
       icon: CalendarDays,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-      ring: 'ring-blue-100',
+      tile: 'linear-gradient(135deg, #93C5FD, #3B82F6)',
+      tint: 'linear-gradient(135deg, rgba(147,197,253,0.20), transparent 60%)',
     },
     {
       label: 'En espera',
       value: stats.todayByStatus.waiting ?? 0,
       icon: Hourglass,
-      color: 'text-amber-600',
-      bg: 'bg-amber-50',
-      ring: 'ring-amber-100',
+      tile: 'linear-gradient(135deg, #FDE68A, #F59E0B)',
+      tint: 'linear-gradient(135deg, rgba(253,230,138,0.25), transparent 60%)',
     },
     {
       label: 'Consultas del mes',
       value: stats.monthlyConsultations,
       icon: FileText,
-      color: 'text-violet-600',
-      bg: 'bg-violet-50',
-      ring: 'ring-violet-100',
+      tile: 'linear-gradient(135deg, #C4B5FD, #8B5CF6)',
+      tint: 'linear-gradient(135deg, rgba(196,181,253,0.20), transparent 60%)',
     },
   ];
 
@@ -107,32 +107,36 @@ export default async function DashboardPage() {
   }).format(new Date());
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      {/* Branded greeting header — carries the login's teal/slate identity. */}
-      <div className="mb-6 overflow-hidden rounded-xl border border-zinc-200/80 bg-linear-to-br from-white via-white to-teal-50/50 p-5 shadow-sm sm:p-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+    <div className="fade-in p-6 sm:p-8 lg:px-10">
+      {/* Branded greeting header — the only solid-color card in the app. */}
+      <div className="greeting-card mb-6 rounded-[22px] px-8 py-7 sm:px-9">
+        <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.025em] text-white">
           {getGreeting(timezone)}
           {displayName ? `, ${displayName}` : ''}
         </h1>
-        <p className="mt-1 text-sm capitalize text-zinc-500">{dateLabel}</p>
+        <p className="mt-1.5 text-sm capitalize text-teal-50/85">{dateLabel}</p>
       </div>
 
-      {/* Stats cards */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map(({ label, value, icon: Icon, color, bg, ring }) => (
+      {/* Stat cards */}
+      <div className="mb-6 grid gap-4.5 sm:grid-cols-2 lg:grid-cols-4">
+        {statCards.map(({ label, value, icon: Icon, tile, tint }) => (
           <div
             key={label}
-            className="rounded-xl border border-zinc-200/80 bg-linear-to-br from-white to-zinc-50/70 p-5 shadow-sm ring-1 ring-zinc-900/2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+            className="stat-card p-5.5"
+            style={{ '--card-tint': tint } as React.CSSProperties}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-zinc-500">{label}</p>
-                <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900">
+                <p className="text-[13px] font-medium text-slate-500">{label}</p>
+                <p className="mt-2 text-[38px] font-bold leading-none tabular-nums tracking-[-0.03em] text-slate-900">
                   {value}
                 </p>
               </div>
-              <div className={`rounded-xl p-2.5 ring-1 ${bg} ${ring}`}>
-                <Icon className={`h-5 w-5 ${color}`} />
+              <div
+                className="glass-tile flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+                style={{ background: tile }}
+              >
+                <Icon className="h-[22px] w-[22px] text-white" />
               </div>
             </div>
           </div>
@@ -140,64 +144,90 @@ export default async function DashboardPage() {
       </div>
 
       {/* Bottom section */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Next patient — doctors only */}
+      <div className={isDoctor ? 'grid gap-6 lg:grid-cols-3' : 'grid gap-6'}>
+        {/* Left column — next patient + pending tasks (doctors only) */}
         {isDoctor && (
-          <div className="lg:col-span-1">
-            <h2 className="mb-3 text-sm font-semibold text-zinc-700">
-              Próximo paciente
-            </h2>
-            {nextAppointment ? (
-              <div className="rounded-xl border border-teal-200 bg-teal-50/60 p-5 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-sm font-semibold text-white">
-                    {nextAppointment.patient.firstName[0]}
-                    {nextAppointment.patient.lastName[0]}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-zinc-900">
-                      {nextAppointment.patient.firstName} {nextAppointment.patient.lastName}
-                    </p>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-zinc-500">
-                        {formatTime(nextAppointment.startTime)}
-                      </span>
-                      <StatusBadge status={nextAppointment.status} />
+          <div className="flex flex-col gap-6 lg:col-span-1">
+            <div>
+              <h2 className="mb-3.5 text-[13px] font-semibold text-slate-700">
+                Próximo paciente
+              </h2>
+              {nextAppointment ? (
+                <div className="next-card rounded-[22px] p-5.5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#0D9488,#0F766E)] text-base font-semibold text-white shadow-[0_8px_18px_-6px_rgba(13,148,136,0.55),inset_0_1px_0_rgba(255,255,255,0.25)]">
+                      {nextAppointment.patient.firstName[0]}
+                      {nextAppointment.patient.lastName[0]}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-base font-semibold tracking-[-0.01em] text-slate-900">
+                        {nextAppointment.patient.firstName}{' '}
+                        {nextAppointment.patient.lastName}
+                      </p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-slate-600">
+                          {formatTime(nextAppointment.startTime)}
+                        </span>
+                        <StatusBadge status={nextAppointment.status} />
+                      </div>
                     </div>
                   </div>
+                  {nextAppointment.reason && (
+                    <p className="mt-3.5 line-clamp-2 text-[13px] text-slate-700">
+                      {nextAppointment.reason}
+                    </p>
+                  )}
+                  <Link
+                    href={`/pacientes/${nextAppointment.patientId}`}
+                    className={cn(
+                      buttonVariants({ size: 'lg' }),
+                      'mt-4.5 w-full',
+                    )}
+                  >
+                    Atender paciente
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
                 </div>
-                {nextAppointment.reason && (
-                  <p className="mt-3 line-clamp-2 text-sm text-zinc-600">
-                    {nextAppointment.reason}
+              ) : (
+                <div className="glass-card flex flex-col items-center justify-center rounded-[22px] py-14 text-center">
+                  <span className="mb-2 flex h-16 w-16 items-center justify-center rounded-[22px] bg-[linear-gradient(135deg,#F0FDFA,#CCFBF1)] text-teal-600 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.15),0_8px_18px_-8px_rgba(13,148,136,0.35)]">
+                    <Users className="h-7 w-7" />
+                  </span>
+                  <p className="mt-2 text-[15px] font-semibold text-slate-800">
+                    Sin pacientes pendientes
                   </p>
-                )}
-                <Link
-                  href={`/pacientes/${nextAppointment.patientId}`}
-                  className="mt-4 flex items-center justify-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors duration-150 hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/40"
-                >
-                  Atender paciente
-                  <ChevronRight className="h-4 w-4" />
-                </Link>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200/80 bg-linear-to-br from-white to-teal-50/40 py-12 text-center shadow-sm">
-                <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 ring-1 ring-teal-100">
-                  <Users className="h-5 w-5 text-teal-500" />
+                  <p className="mt-1 max-w-70 text-[13px] leading-relaxed text-slate-500">
+                    Las citas activas del día aparecerán aquí.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Pendientes — clinical follow-ups (unsigned notes, pending labs,
+                prescriptions to deliver). TODO: no dedicated queries exist yet;
+                wire real counts here once they land. Empty state for now. */}
+            <div>
+              <h2 className="mb-3.5 text-[13px] font-semibold text-slate-700">
+                Pendientes
+              </h2>
+              <div className="glass-card flex flex-col items-center justify-center rounded-[22px] py-12 text-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-[22px] bg-[linear-gradient(135deg,#F0FDFA,#CCFBF1)] text-teal-600 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.15),0_8px_18px_-8px_rgba(13,148,136,0.35)]">
+                  <FileText className="h-7 w-7" />
                 </span>
-                <p className="text-sm font-medium text-zinc-700">
-                  Sin pacientes pendientes
+                <p className="mt-2 text-[15px] font-semibold text-slate-800">
+                  Sin pendientes
                 </p>
-                <p className="mt-1 text-xs text-zinc-400">
-                  Las citas activas del día aparecerán aquí.
+                <p className="mt-1 max-w-70 text-[13px] leading-relaxed text-slate-500">
+                  Las notas por firmar y tareas del día aparecerán aquí.
                 </p>
               </div>
-            )}
+            </div>
           </div>
         )}
 
         {/* Today's queue */}
-        <div className={isDoctor ? 'lg:col-span-2' : 'lg:col-span-3'}>
-          <h2 className="mb-3 text-sm font-semibold text-zinc-700">
+        <div className={isDoctor ? 'lg:col-span-2' : ''}>
+          <h2 className="mb-3.5 text-[13px] font-semibold text-slate-700">
             {isDoctor ? 'Mis citas de hoy' : 'Pacientes del día'}
           </h2>
           <TodayQueue appointments={todayAppointments} showDoctor={!isDoctor} />

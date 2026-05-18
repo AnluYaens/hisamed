@@ -24,14 +24,14 @@ export function TodayQueue({ appointments, showDoctor = false, compact = false }
 
   if (appointments.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200/80 bg-linear-to-br from-white to-zinc-50/70 py-12 text-center shadow-sm dark:border-zinc-700 dark:from-zinc-900 dark:to-zinc-900">
-        <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 ring-1 ring-teal-100 dark:bg-teal-900/30 dark:ring-teal-800">
-          <Users className="h-5 w-5 text-teal-500 dark:text-teal-400" />
+      <div className="glass-card flex flex-col items-center justify-center rounded-[22px] py-14 text-center">
+        <span className="flex h-16 w-16 items-center justify-center rounded-[22px] bg-[linear-gradient(135deg,#F0FDFA,#CCFBF1)] text-teal-600 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.15),0_8px_18px_-8px_rgba(13,148,136,0.35)]">
+          <Users className="h-7 w-7" />
         </span>
-        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <p className="mt-2 text-[15px] font-semibold text-slate-800">
           Sin citas hoy
         </p>
-        <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+        <p className="mt-1 max-w-70 text-[13px] leading-relaxed text-slate-500">
           Las citas programadas para hoy se mostrarán aquí.
         </p>
       </div>
@@ -39,26 +39,26 @@ export function TodayQueue({ appointments, showDoctor = false, compact = false }
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-      <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+    <div className="glass-surface overflow-hidden rounded-[20px]">
+      <div className="flex items-center justify-between border-b border-slate-900/5 px-4.5 py-3.5">
         <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-zinc-400" />
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <Clock className="h-3.5 w-3.5 text-slate-400" />
+          <span className="text-[13px] font-medium text-slate-700">
             Cola del día
           </span>
         </div>
-        <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
+        <span className="rounded-full bg-teal-600/12 px-2.75 py-0.5 text-[11.5px] font-semibold text-teal-700">
           {active.length} activa{active.length !== 1 ? 's' : ''}
         </span>
       </div>
 
-      <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+      <ul className="divide-y divide-slate-900/4">
         {appointments.map((appt) => {
           const name = `${appt.patient.firstName} ${appt.patient.lastName}`;
           return (
-            <li key={appt.id} className="flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
+            <li key={appt.id} className="flex items-center gap-3.5 px-4.5 py-3.5 transition-colors duration-200 hover:bg-teal-600/4">
               {/* Avatar */}
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-50 text-xs font-semibold text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#F0FDFA,#CCFBF1)] text-xs font-semibold text-teal-700 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.15)]">
                 {appt.patient.firstName[0]}
                 {appt.patient.lastName[0]}
               </div>
@@ -94,10 +94,10 @@ export function TodayQueue({ appointments, showDoctor = false, compact = false }
       </ul>
 
       {appointments.length > 5 && (
-        <div className="border-t border-zinc-100 px-4 py-2.5 dark:border-zinc-800">
+        <div className="border-t border-slate-900/5 px-4.5 py-2.5">
           <Link
             href="/agenda"
-            className="text-xs font-medium text-teal-700 hover:underline dark:text-teal-400"
+            className="text-xs font-semibold text-teal-700 hover:underline"
           >
             Ver todas las citas →
           </Link>
