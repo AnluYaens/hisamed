@@ -30,7 +30,7 @@ export function buildPatientHistoryEmail(params: {
     ``,
     `Adjuntamos la historia clínica solicitada en formato PDF.`,
     ``,
-    `Este documento contiene información médica confidencial. Si usted recibió este correo por error, por favor elimínelo y notifique a la clínica.`,
+    `Este documento contiene información médica confidencial. Si usted recibió este correo por error, por favor elimínelo y notifique al remitente.`,
     ``,
     `— ${params.clinicName}`,
   ].join('\n');
@@ -44,7 +44,7 @@ export function buildPatientHistoryEmail(params: {
   <p>Adjuntamos la historia clínica de <strong>${safeName}</strong> en formato PDF.</p>
   <p style="background:#fff8e1; border:1px solid #f5d27a; padding:12px; border-radius:6px; font-size: 13px;">
     Este documento contiene información médica confidencial. Si usted recibió este correo por error,
-    por favor elimínelo y notifique a la clínica.
+    por favor elimínelo y notifique al remitente.
   </p>
   <p style="margin-top:24px; color:#555;">— ${safeClinic}</p>
 </body>

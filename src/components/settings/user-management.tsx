@@ -56,7 +56,7 @@ export function UserManagement({
     <div>
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-slate-500">
-          {users.length} usuario{users.length !== 1 ? 's' : ''} en la clínica
+          {users.length} usuario{users.length !== 1 ? 's' : ''} en tu consultorio
         </p>
         <Button onClick={() => setShowCreate(true)}>
           <UserPlus className="mr-2 h-4 w-4" />

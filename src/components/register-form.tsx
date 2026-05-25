@@ -19,14 +19,14 @@ export function RegisterForm() {
     <form action={action} className="space-y-4" noValidate>
       <div className="space-y-1.5">
         <label htmlFor="clinicName" className={labelClass}>
-          Nombre de la clínica
+          Nombre de tu consultorio
         </label>
         <input
           id="clinicName"
           name="clinicName"
           type="text"
           autoComplete="organization"
-          placeholder="Clínica San Martín"
+          placeholder="Consultorio Dra. García"
           required
           className={inputClass}
           disabled={pending}

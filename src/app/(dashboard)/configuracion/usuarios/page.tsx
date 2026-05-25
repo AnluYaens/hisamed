@@ -26,7 +26,7 @@ export default async function UsuariosPage() {
           Gestión de usuarios
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Usuarios con acceso a la clínica
+          Usuarios con acceso a tu consultorio
         </p>
       </div>
 

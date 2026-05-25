@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { eq } from 'drizzle-orm';
-import { CalendarDays, ChevronRight, FileText, Hourglass, Users } from 'lucide-react';
+import { and, eq } from 'drizzle-orm';
+import { CalendarDays, ChevronRight, FileText, Hourglass, Stethoscope, Users } from 'lucide-react';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { getSession } from '@/lib/auth/session';
@@ -39,16 +39,24 @@ export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect('/login');
 
-  const [{ timezone }, user] = await Promise.all([
+  const [{ timezone }, user, firstDoctor] = await Promise.all([
     getClinicSettings(session.clinicId),
     db.query.users.findFirst({
       where: eq(users.id, session.userId),
       columns: { fullName: true },
     }),
+    // Onboarding nudge for solo-doctor accounts: if the admin who signed up
+    // hasn't yet created a doctor user, they can't sign notes or open the
+    // clinical tabs. The nudge below points them to /configuracion/usuarios.
+    db.query.users.findFirst({
+      where: and(eq(users.clinicId, session.clinicId), eq(users.role, 'doctor')),
+      columns: { id: true },
+    }),
   ]);
   const today = todayInTz(timezone);
   const todayDate = parseDateStr(today)!;
   const isDoctor = session.role === 'doctor';
+  const showDoctorSetupNudge = session.role === 'admin' && !firstDoctor;
 
   const [stats, todayAppointments] = await Promise.all([
     getDashboardStats(session.clinicId, timezone),
@@ -116,6 +124,35 @@ export default async function DashboardPage() {
         </h1>
         <p className="mt-1.5 text-sm capitalize text-teal-50/85">{dateLabel}</p>
       </div>
+
+      {/* Onboarding nudge: solo doctor signed up as admin but never created
+          a doctor user — gently push them to set one up so they can sign
+          notes and unlock clinical tabs. */}
+      {showDoctorSetupNudge && (
+        <div className="mb-6 flex flex-col gap-3 rounded-[20px] border border-teal-600/20 bg-teal-50/70 p-5 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:p-5">
+          <div className="flex items-start gap-3.5">
+            <div className="glass-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#5EEAD4,#14B8A6)]">
+              <Stethoscope className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <p className="text-[15px] font-semibold text-slate-900">
+                Configura tu cuenta de doctor
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-600">
+                Para empezar a registrar pacientes y firmar notas clínicas,
+                crea tu cuenta de doctor en Configuración → Usuarios.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/configuracion/usuarios"
+            className={cn(buttonVariants({ size: 'sm' }), 'shrink-0 self-start sm:self-auto')}
+          >
+            Crear cuenta de doctor
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="mb-6 grid gap-4.5 sm:grid-cols-2 lg:grid-cols-4">

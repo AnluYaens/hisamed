@@ -56,7 +56,7 @@ export function ClinicSettingsForm({ clinic, action }: ClinicSettingsFormProps) 
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Nombre de la clínica <span className="text-red-500">*</span>
+            Nombre del consultorio <span className="text-red-500">*</span>
           </label>
           <input
             name="name"

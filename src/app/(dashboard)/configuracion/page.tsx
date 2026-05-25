@@ -11,7 +11,7 @@ const adminLinks = [
     href: '/configuracion/usuarios',
     icon: Users,
     label: 'Gestión de usuarios',
-    description: 'Crear, editar y desactivar usuarios de la clínica',
+    description: 'Crear, editar y desactivar usuarios de tu consultorio',
   },
   {
     href: '/configuracion/importar',
@@ -60,7 +60,7 @@ export default async function ConfiguracionPage() {
             <Building2 className="h-4 w-4 text-white" />
           </div>
           <h2 className="text-base font-semibold text-slate-900">
-            Datos de la clínica
+            Datos del consultorio
           </h2>
         </div>
         <div className="glass-card rounded-[22px] p-6">

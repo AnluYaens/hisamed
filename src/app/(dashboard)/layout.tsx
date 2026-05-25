@@ -34,20 +34,34 @@ const PLANS = [
     key: 'basico',
     name: 'Básico',
     price: 'Próximamente',
-    features: ['Hasta 500 pacientes', '1 médico', '1 GB de almacenamiento'],
+    features: [
+      'Ideal para empezar tu consulta',
+      'Hasta 500 pacientes',
+      '1 GB de almacenamiento',
+    ],
   },
   {
     key: 'profesional',
     name: 'Profesional',
     price: 'Próximamente',
-    features: ['Hasta 2.000 pacientes', '3 médicos', '5 GB de almacenamiento'],
+    features: [
+      'Para una consulta establecida',
+      'Hasta 2.000 pacientes',
+      'Equipo de hasta 3 doctores',
+      '5 GB de almacenamiento',
+    ],
     highlight: true,
   },
   {
     key: 'clinica',
     name: 'Clínica',
     price: 'Próximamente',
-    features: ['Pacientes ilimitados', 'Médicos ilimitados', '20 GB de almacenamiento'],
+    features: [
+      'Para clínicas y prácticas grupales',
+      'Pacientes ilimitados',
+      'Doctores ilimitados',
+      '20 GB de almacenamiento',
+    ],
   },
 ];
 

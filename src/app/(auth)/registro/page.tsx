@@ -14,10 +14,10 @@ export default async function RegistroPage() {
     <div className="rounded-2xl border border-zinc-200 bg-white p-7 shadow-sm sm:p-8">
       <div className="mb-6 space-y-1">
         <h2 className="text-lg font-semibold tracking-tight text-zinc-900">
-          Comienza gratis
+          Crea tu cuenta
         </h2>
         <p className="text-sm text-zinc-500">
-          7 días de prueba, sin tarjeta de crédito.
+          Empieza a usar Hisamed en tu consulta — 7 días de prueba, sin tarjeta de crédito.
         </p>
       </div>
       <RegisterForm />

@@ -15,7 +15,7 @@ export const COUNTRIES = Object.keys(COUNTRY_TIMEZONES) as [string, ...string[]]
 
 export const registerClinicSchema = z
   .object({
-    clinicName: z.string().min(1, 'El nombre de la clínica es requerido').max(255),
+    clinicName: z.string().min(1, 'El nombre de tu consultorio es requerido').max(255),
     fullName: z.string().min(1, 'Su nombre completo es requerido').max(255),
     email: z.string().email('Ingresa un email válido').max(255),
     password: z.string().min(10, 'La contraseña debe tener al menos 10 caracteres').max(128),

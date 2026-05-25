@@ -69,7 +69,7 @@ export async function GET(
   if (!clinic) {
     // A session pointing at a deleted clinic shouldn't happen, but if it does
     // we refuse rather than fall back to a default and ship a misleading PDF.
-    return NextResponse.json({ success: false, error: 'Clínica no encontrada' }, { status: 404 });
+    return NextResponse.json({ success: false, error: 'Consultorio no encontrado' }, { status: 404 });
   }
 
   const payload = await getPatientHistoryForExport(clinic, id);

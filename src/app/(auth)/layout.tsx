@@ -41,11 +41,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="relative flex flex-col justify-center gap-10 px-16 text-white">
           <div>
             <h2 className="max-w-md text-3xl font-semibold leading-tight tracking-[-0.02em]">
-              La historia clínica de tu clínica, ordenada y segura.
+              La historia clínica de tu consulta, ordenada y segura.
             </h2>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-teal-50/85">
               Gestiona pacientes, agenda y notas clínicas en un solo lugar,
-              diseñado para el día a día médico.
+              diseñado para el día a día del médico.
             </p>
           </div>
           <ul className="flex flex-col gap-3.5">

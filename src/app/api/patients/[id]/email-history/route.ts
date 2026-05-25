@@ -112,7 +112,7 @@ export async function POST(
 
   const clinic = await getFullClinic(session.clinicId);
   if (!clinic) {
-    return jsonNoStore({ success: false, error: 'Clínica no encontrada' }, 404);
+    return jsonNoStore({ success: false, error: 'Consultorio no encontrado' }, 404);
   }
 
   const payload = await getPatientHistoryForExport(clinic, id);
