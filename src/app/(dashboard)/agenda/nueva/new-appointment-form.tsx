@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { PatientCombobox } from '@/components/appointments/patient-combobox';
 import { createAppointment } from '@/actions/appointments';
 import type { AppointmentActionState } from '@/actions/appointments';
+import { echoValue, formKey } from '@/lib/forms/state';
 
 interface Doctor {
   id: string;
@@ -27,7 +28,7 @@ export function NewAppointmentForm({ doctors, todayStr }: NewAppointmentFormProp
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-      <form action={action} className="flex flex-col gap-5">
+      <form key={formKey(state)} action={action} className="flex flex-col gap-5">
         {state && !state.success && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
             {state.error}
@@ -50,6 +51,7 @@ export function NewAppointmentForm({ doctors, todayStr }: NewAppointmentFormProp
           <select
             id="doctor_id"
             name="doctor_id"
+            defaultValue={echoValue(state, 'doctor_id') ?? ''}
             className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           >
             <option value="">Seleccionar médico…</option>
@@ -73,7 +75,7 @@ export function NewAppointmentForm({ doctors, todayStr }: NewAppointmentFormProp
             id="appt-date"
             type="date"
             name="date"
-            defaultValue={todayStr}
+            defaultValue={echoValue(state, 'date') ?? todayStr}
             min={todayStr}
             className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           />
@@ -92,7 +94,7 @@ export function NewAppointmentForm({ doctors, todayStr }: NewAppointmentFormProp
               id="start_time"
               type="time"
               name="start_time"
-              defaultValue="08:00"
+              defaultValue={echoValue(state, 'start_time') ?? '08:00'}
               className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             />
             {fieldErrors?.start_time && (
@@ -107,7 +109,7 @@ export function NewAppointmentForm({ doctors, todayStr }: NewAppointmentFormProp
               id="end_time"
               type="time"
               name="end_time"
-              defaultValue="08:30"
+              defaultValue={echoValue(state, 'end_time') ?? '08:30'}
               className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             />
           </div>
@@ -123,6 +125,7 @@ export function NewAppointmentForm({ doctors, todayStr }: NewAppointmentFormProp
             name="reason"
             rows={3}
             maxLength={500}
+            defaultValue={echoValue(state, 'reason') ?? ''}
             placeholder="Ej: Consulta de rutina, control prenatal, revisión de resultados…"
             className="w-full resize-none rounded-lg border border-zinc-200 bg-white p-2.5 text-sm shadow-sm outline-none placeholder:text-zinc-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
           />
@@ -138,6 +141,7 @@ export function NewAppointmentForm({ doctors, todayStr }: NewAppointmentFormProp
             name="notes"
             rows={2}
             maxLength={2000}
+            defaultValue={echoValue(state, 'notes') ?? ''}
             placeholder="Notas adicionales para el equipo…"
             className="w-full resize-none rounded-lg border border-zinc-200 bg-white p-2.5 text-sm shadow-sm outline-none placeholder:text-zinc-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
           />

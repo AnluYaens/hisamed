@@ -5,6 +5,7 @@ import { Loader2, AlertCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { UserActionState } from '@/actions/users';
 import type { UserListItem } from '@/queries/users';
+import { echoValue, formKey } from '@/lib/forms/state';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Administrador',
@@ -50,7 +51,7 @@ export function CreateUserModal({ action, onClose }: CreateUserModalProps) {
           </button>
         </div>
 
-        <form action={formAction} className="space-y-4 p-6">
+        <form key={formKey(state)} action={formAction} className="space-y-4 p-6">
           {state && !state.success && (
             <div className="flex items-start gap-2 rounded-2xl border border-red-600/20 bg-red-100/70 px-3.5 py-3 text-sm text-red-700 backdrop-blur-md">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -66,6 +67,7 @@ export function CreateUserModal({ action, onClose }: CreateUserModalProps) {
               name="full_name"
               type="text"
               required
+              defaultValue={echoValue(state, 'full_name') ?? ''}
               className="glass-input w-full rounded-[14px] px-3.5 py-2.5 text-sm text-slate-900 outline-none"
             />
             {field('full_name') && (
@@ -81,6 +83,7 @@ export function CreateUserModal({ action, onClose }: CreateUserModalProps) {
               name="email"
               type="email"
               required
+              defaultValue={echoValue(state, 'email') ?? ''}
               className="glass-input w-full rounded-[14px] px-3.5 py-2.5 text-sm text-slate-900 outline-none"
             />
             {field('email') && (
@@ -111,7 +114,7 @@ export function CreateUserModal({ action, onClose }: CreateUserModalProps) {
             </label>
             <select
               name="role"
-              defaultValue="receptionist"
+              defaultValue={echoValue(state, 'role') ?? 'receptionist'}
               className="glass-input w-full rounded-[14px] px-3.5 py-2.5 text-sm text-slate-900 outline-none"
             >
               {Object.entries(ROLE_LABELS).map(([value, label]) => (
@@ -206,7 +209,7 @@ export function EditUserModal({
         </div>
 
         {tab === 'edit' && (
-          <form action={editAction} className="space-y-4 p-6">
+          <form key={formKey(editState)} action={editAction} className="space-y-4 p-6">
             <input type="hidden" name="user_id" value={user.id} />
 
             {editState && !editState.success && (
@@ -223,7 +226,7 @@ export function EditUserModal({
               <input
                 name="full_name"
                 type="text"
-                defaultValue={user.fullName}
+                defaultValue={echoValue(editState, 'full_name') ?? user.fullName}
                 className="glass-input w-full rounded-[14px] px-3.5 py-2.5 text-sm text-slate-900 outline-none"
               />
               {editErrors?.full_name?.[0] && (
@@ -237,7 +240,7 @@ export function EditUserModal({
               </label>
               <select
                 name="role"
-                defaultValue={user.role}
+                defaultValue={echoValue(editState, 'role') ?? user.role}
                 className="glass-input w-full rounded-[14px] px-3.5 py-2.5 text-sm text-slate-900 outline-none"
               >
                 {Object.entries(ROLE_LABELS).map(([value, label]) => (
@@ -280,7 +283,7 @@ export function EditUserModal({
         )}
 
         {tab === 'password' && (
-          <form action={resetFormAction} className="space-y-4 p-6">
+          <form key={formKey(resetState)} action={resetFormAction} className="space-y-4 p-6">
             <input type="hidden" name="user_id" value={user.id} />
 
             {resetState && !resetState.success && (

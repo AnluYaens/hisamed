@@ -11,15 +11,12 @@ import { generateId } from '@/lib/utils/generate-id';
 import { patientCreateSchema, patientUpdateSchema, partnerUpsertSchema } from '@/lib/validators/patient';
 import { checkDuplicateIdNumber, getPatientById } from '@/queries/patients';
 import { toDateStr } from '@/lib/dates';
+import { formFailure, type FormFailure } from '@/lib/forms/state';
 
 export type PatientActionState =
   | null
   | { success: true; patientId?: string }
-  | {
-      success: false;
-      error: string;
-      fieldErrors?: Record<string, string[] | undefined>;
-    };
+  | FormFailure;
 
 // ─── createPatient ─────────────────────────────────────────────────────────────
 
@@ -38,11 +35,10 @@ export async function createPatient(
   const parsed = patientCreateSchema.safeParse(raw);
 
   if (!parsed.success) {
-    return {
-      success: false,
+    return formFailure(formData, {
       error: 'Revisa los datos del formulario',
       fieldErrors: parsed.error.flatten().fieldErrors,
-    };
+    });
   }
 
   const data = parsed.data;
@@ -58,19 +54,18 @@ export async function createPatient(
       .from(patients)
       .where(eq(patients.clinicId, session.clinicId));
     if (total >= clinicRow.maxPatients) {
-      return {
-        success: false,
+      return formFailure(formData, {
         error: `Has alcanzado el límite de pacientes de tu plan (${clinicRow.maxPatients}). Actualiza tu plan para registrar más pacientes.`,
-      };
+      });
     }
   }
 
   const duplicate = await checkDuplicateIdNumber(session.clinicId, data.id_number);
   if (duplicate) {
-    return {
-      success: false,
+    return formFailure(formData, {
       error: `Ya existe un paciente registrado con el documento ${data.id_number}`,
-    };
+      fieldErrors: { id_number: [`Ya existe un paciente con este documento`] },
+    });
   }
 
   const patientId = generateId();
@@ -141,18 +136,17 @@ export async function updatePatient(
   const parsed = patientUpdateSchema.safeParse(raw);
 
   if (!parsed.success) {
-    return {
-      success: false,
+    return formFailure(formData, {
       error: 'Revisa los datos del formulario',
       fieldErrors: parsed.error.flatten().fieldErrors,
-    };
+    });
   }
 
   const { patient_id, ...fields } = parsed.data;
 
   const existing = await getPatientById(session.clinicId, patient_id);
   if (!existing) {
-    return { success: false, error: 'Paciente no encontrado' };
+    return formFailure(formData, { error: 'Paciente no encontrado' });
   }
 
   if (fields.id_number && fields.id_number !== existing.idNumber) {
@@ -162,10 +156,10 @@ export async function updatePatient(
       patient_id,
     );
     if (duplicate) {
-      return {
-        success: false,
+      return formFailure(formData, {
         error: `Ya existe un paciente registrado con el documento ${fields.id_number}`,
-      };
+        fieldErrors: { id_number: ['Ya existe un paciente con este documento'] },
+      });
     }
   }
 
@@ -273,18 +267,17 @@ export async function upsertPatientPartner(
   const parsed = partnerUpsertSchema.safeParse(raw);
 
   if (!parsed.success) {
-    return {
-      success: false,
+    return formFailure(formData, {
       error: 'Revisa los datos del formulario',
       fieldErrors: parsed.error.flatten().fieldErrors,
-    };
+    });
   }
 
   const { patient_id, ...fields } = parsed.data;
 
   const patient = await getPatientById(session.clinicId, patient_id);
   if (!patient) {
-    return { success: false, error: 'Paciente no encontrado' };
+    return formFailure(formData, { error: 'Paciente no encontrado' });
   }
 
   const existing = await db.query.patientPartners.findFirst({

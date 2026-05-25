@@ -7,11 +7,9 @@ import { clinics } from '@/lib/db/schema';
 import { requireRole } from '@/lib/auth/session';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { clinicSettingsSchema } from '@/lib/validators/user';
+import { formFailure, type FormFailure } from '@/lib/forms/state';
 
-export type ClinicActionState =
-  | null
-  | { success: true }
-  | { success: false; error: string; fieldErrors?: Record<string, string[] | undefined> };
+export type ClinicActionState = null | { success: true } | FormFailure;
 
 export async function updateClinicSettings(
   _prevState: ClinicActionState,
@@ -28,11 +26,10 @@ export async function updateClinicSettings(
   const parsed = clinicSettingsSchema.safeParse(raw);
 
   if (!parsed.success) {
-    return {
-      success: false,
+    return formFailure(formData, {
       error: 'Revisa los datos del formulario',
       fieldErrors: parsed.error.flatten().fieldErrors,
-    };
+    });
   }
 
   const { name, address, phone, timezone, week_starts_on } = parsed.data;

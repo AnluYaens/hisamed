@@ -14,11 +14,9 @@ import {
   resetPasswordSchema,
 } from '@/lib/validators/user';
 import { getUserById } from '@/queries/users';
+import { formFailure, type FormFailure } from '@/lib/forms/state';
 
-export type UserActionState =
-  | null
-  | { success: true }
-  | { success: false; error: string; fieldErrors?: Record<string, string[] | undefined> };
+export type UserActionState = null | { success: true } | FormFailure;
 
 // ─── createUser ───────────────────────────────────────────────────────────────
 
@@ -37,11 +35,10 @@ export async function createUser(
   const parsed = userCreateSchema.safeParse(raw);
 
   if (!parsed.success) {
-    return {
-      success: false,
+    return formFailure(formData, {
       error: 'Revisa los datos del formulario',
       fieldErrors: parsed.error.flatten().fieldErrors,
-    };
+    });
   }
 
   const { email, password, full_name, role } = parsed.data;
@@ -53,7 +50,10 @@ export async function createUser(
     .limit(1);
 
   if (existing.length > 0) {
-    return { success: false, error: `Ya existe un usuario con el email ${email}` };
+    return formFailure(formData, {
+      error: `Ya existe un usuario con el email ${email}`,
+      fieldErrors: { email: ['Ya existe un usuario con este email'] },
+    });
   }
 
   if (role === 'doctor') {
@@ -68,10 +68,9 @@ export async function createUser(
         .from(users)
         .where(and(eq(users.clinicId, session.clinicId), eq(users.role, 'doctor')));
       if (total >= clinicRow.maxDoctors) {
-        return {
-          success: false,
+        return formFailure(formData, {
           error: `Has alcanzado el límite de médicos de tu plan (${clinicRow.maxDoctors}). Actualiza tu plan para agregar más médicos.`,
-        };
+        });
       }
     }
   }
@@ -119,26 +118,25 @@ export async function updateUser(
   const parsed = userUpdateSchema.safeParse(raw);
 
   if (!parsed.success) {
-    return {
-      success: false,
+    return formFailure(formData, {
       error: 'Revisa los datos del formulario',
       fieldErrors: parsed.error.flatten().fieldErrors,
-    };
+    });
   }
 
   const { user_id, full_name, role, is_active } = parsed.data;
 
   const existing = await getUserById(session.clinicId, user_id);
   if (!existing) {
-    return { success: false, error: 'Usuario no encontrado' };
+    return formFailure(formData, { error: 'Usuario no encontrado' });
   }
 
   if (user_id === session.userId && role !== undefined && role !== existing.role) {
-    return { success: false, error: 'No puedes cambiar tu propio rol' };
+    return formFailure(formData, { error: 'No puedes cambiar tu propio rol' });
   }
 
   if (is_active === false && user_id === session.userId) {
-    return { success: false, error: 'No puedes desactivarte a ti mismo' };
+    return formFailure(formData, { error: 'No puedes desactivarte a ti mismo' });
   }
 
   const updateData: Record<string, unknown> = { updatedAt: new Date() };
@@ -182,18 +180,17 @@ export async function resetUserPassword(
   const parsed = resetPasswordSchema.safeParse(raw);
 
   if (!parsed.success) {
-    return {
-      success: false,
+    return formFailure(formData, {
       error: 'Revisa los datos del formulario',
       fieldErrors: parsed.error.flatten().fieldErrors,
-    };
+    });
   }
 
   const { user_id, new_password } = parsed.data;
 
   const existing = await getUserById(session.clinicId, user_id);
   if (!existing) {
-    return { success: false, error: 'Usuario no encontrado' };
+    return formFailure(formData, { error: 'Usuario no encontrado' });
   }
 
   const passwordHash = await hashPassword(new_password);

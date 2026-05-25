@@ -11,10 +11,9 @@ import { generateId } from '@/lib/utils/generate-id';
 import { enforceRateLimits } from '@/lib/rate-limit';
 import { getClientIpFromHeaders } from '@/lib/audit';
 import { registerClinicSchema, COUNTRY_TIMEZONES } from '@/lib/validators/register-clinic';
+import { formFailure, type FormFailure } from '@/lib/forms/state';
 
-export type RegisterState =
-  | null
-  | { success: false; error: string; fieldErrors?: Record<string, string[] | undefined> };
+export type RegisterState = null | FormFailure;
 
 const REGISTRATION_WINDOW_SECONDS = 60 * 60;
 const PER_IP_REGISTRATION_LIMIT = 5;
@@ -35,11 +34,10 @@ export async function registerClinic(
 
   const parsed = registerClinicSchema.safeParse(raw);
   if (!parsed.success) {
-    return {
-      success: false,
+    return formFailure(formData, {
       error: 'Revisa los campos del formulario',
       fieldErrors: parsed.error.flatten().fieldErrors,
-    };
+    });
   }
 
   const { clinicName, fullName, email, password, country } = parsed.data;
@@ -55,10 +53,9 @@ export async function registerClinic(
       },
     ]);
     if (!rate.allowed) {
-      return {
-        success: false,
+      return formFailure(formData, {
         error: 'Demasiados intentos de registro. Intenta de nuevo en una hora.',
-      };
+      });
     }
   }
 
@@ -69,7 +66,10 @@ export async function registerClinic(
     .limit(1);
 
   if (existing.length > 0) {
-    return { success: false, error: 'Este email ya está registrado' };
+    return formFailure(formData, {
+      error: 'Este email ya está registrado',
+      fieldErrors: { email: ['Este email ya está registrado'] },
+    });
   }
 
   const timezone = COUNTRY_TIMEZONES[country] ?? 'America/Caracas';

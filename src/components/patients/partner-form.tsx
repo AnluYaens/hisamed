@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { upsertPatientPartner } from '@/actions/patients';
 import type { PatientPartner } from '@/lib/db/schema';
 import { BLOOD_TYPES } from '@/lib/validators/patient';
+import { echoValue, formKey } from '@/lib/forms/state';
 
 interface PartnerFormProps {
   patientId: string;
@@ -39,7 +40,7 @@ export function PartnerForm({ patientId, partner }: PartnerFormProps) {
     : '';
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form key={formKey(state)} action={formAction} className="space-y-5">
       <input type="hidden" name="patient_id" value={patientId} />
 
       {state && !state.success && (
@@ -65,7 +66,7 @@ export function PartnerForm({ patientId, partner }: PartnerFormProps) {
             id="partner_full_name"
             name="full_name"
             type="text"
-            defaultValue={partner?.fullName ?? ''}
+            defaultValue={echoValue(state, 'full_name') ?? partner?.fullName ?? ''}
             placeholder="Ej: Carlos Pérez"
             className={fieldClass(!!field('full_name'))}
           />
@@ -80,7 +81,7 @@ export function PartnerForm({ patientId, partner }: PartnerFormProps) {
             id="partner_id_number"
             name="id_number"
             type="text"
-            defaultValue={partner?.idNumber ?? ''}
+            defaultValue={echoValue(state, 'id_number') ?? partner?.idNumber ?? ''}
             placeholder="Ej: 12345678"
             className={fieldClass(!!field('id_number'))}
           />
@@ -94,7 +95,7 @@ export function PartnerForm({ patientId, partner }: PartnerFormProps) {
             id="partner_date_of_birth"
             name="date_of_birth"
             type="date"
-            defaultValue={dobValue}
+            defaultValue={echoValue(state, 'date_of_birth') ?? dobValue}
             className={fieldClass(!!field('date_of_birth'))}
           />
         </div>
@@ -107,7 +108,7 @@ export function PartnerForm({ patientId, partner }: PartnerFormProps) {
             id="partner_phone"
             name="phone"
             type="tel"
-            defaultValue={partner?.phone ?? ''}
+            defaultValue={echoValue(state, 'phone') ?? partner?.phone ?? ''}
             placeholder="Ej: 0412-5551234"
             className={fieldClass(!!field('phone'))}
           />
@@ -121,7 +122,7 @@ export function PartnerForm({ patientId, partner }: PartnerFormProps) {
             id="partner_email"
             name="email"
             type="email"
-            defaultValue={partner?.email ?? ''}
+            defaultValue={echoValue(state, 'email') ?? partner?.email ?? ''}
             placeholder="Ej: pareja@email.com"
             className={fieldClass(!!field('email'))}
           />
@@ -135,7 +136,7 @@ export function PartnerForm({ patientId, partner }: PartnerFormProps) {
           <select
             id="partner_blood_type"
             name="blood_type"
-            defaultValue={partner?.bloodType ?? ''}
+            defaultValue={echoValue(state, 'blood_type') ?? partner?.bloodType ?? ''}
             className={fieldClass(!!field('blood_type'))}
           >
             <option value="">Desconocido</option>
@@ -153,7 +154,7 @@ export function PartnerForm({ patientId, partner }: PartnerFormProps) {
             id="partner_occupation"
             name="occupation"
             type="text"
-            defaultValue={partner?.occupation ?? ''}
+            defaultValue={echoValue(state, 'occupation') ?? partner?.occupation ?? ''}
             placeholder="Ej: Ingeniero, Docente…"
             className={fieldClass(false)}
           />
@@ -166,7 +167,7 @@ export function PartnerForm({ patientId, partner }: PartnerFormProps) {
           <textarea
             id="partner_notes"
             name="notes"
-            defaultValue={partner?.notes ?? ''}
+            defaultValue={echoValue(state, 'notes') ?? partner?.notes ?? ''}
             rows={3}
             placeholder="Observaciones sobre la pareja…"
             className={textareaClass(false)}

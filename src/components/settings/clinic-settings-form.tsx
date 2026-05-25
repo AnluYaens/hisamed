@@ -5,6 +5,7 @@ import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ClinicActionState } from '@/actions/clinic';
 import type { FullClinic } from '@/queries/clinic';
+import { echoValue, formKey } from '@/lib/forms/state';
 
 const TIMEZONES = [
   'America/Caracas',
@@ -38,7 +39,7 @@ export function ClinicSettingsForm({ clinic, action }: ClinicSettingsFormProps) 
   }
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form key={formKey(state)} action={formAction} className="space-y-5">
       {state && !state.success && (
         <div className="flex items-start gap-2.5 rounded-2xl border border-red-600/20 bg-red-100/70 px-4 py-3 text-sm text-red-700 backdrop-blur-md">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -61,7 +62,7 @@ export function ClinicSettingsForm({ clinic, action }: ClinicSettingsFormProps) 
           <input
             name="name"
             type="text"
-            defaultValue={clinic.name}
+            defaultValue={echoValue(state, 'name') ?? clinic.name}
             required
             className="glass-input w-full rounded-[14px] px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none"
           />
@@ -75,7 +76,7 @@ export function ClinicSettingsForm({ clinic, action }: ClinicSettingsFormProps) 
           <textarea
             name="address"
             rows={2}
-            defaultValue={clinic.address ?? ''}
+            defaultValue={echoValue(state, 'address') ?? clinic.address ?? ''}
             className="glass-input w-full rounded-[14px] px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none"
           />
         </div>
@@ -87,7 +88,7 @@ export function ClinicSettingsForm({ clinic, action }: ClinicSettingsFormProps) 
           <input
             name="phone"
             type="tel"
-            defaultValue={clinic.phone ?? ''}
+            defaultValue={echoValue(state, 'phone') ?? clinic.phone ?? ''}
             className="glass-input w-full rounded-[14px] px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none"
           />
         </div>
@@ -98,7 +99,7 @@ export function ClinicSettingsForm({ clinic, action }: ClinicSettingsFormProps) 
           </label>
           <select
             name="timezone"
-            defaultValue={clinic.timezone}
+            defaultValue={echoValue(state, 'timezone') ?? clinic.timezone}
             className="glass-input w-full rounded-[14px] px-3.5 py-2.5 text-sm text-slate-900 outline-none"
           >
             {TIMEZONES.map((tz) => (
@@ -118,7 +119,7 @@ export function ClinicSettingsForm({ clinic, action }: ClinicSettingsFormProps) 
           </label>
           <select
             name="week_starts_on"
-            defaultValue={String(clinic.weekStartsOn)}
+            defaultValue={echoValue(state, 'week_starts_on') ?? String(clinic.weekStartsOn)}
             className="glass-input w-full rounded-[14px] px-3.5 py-2.5 text-sm text-slate-900 outline-none"
           >
             <option value="1">Lunes</option>

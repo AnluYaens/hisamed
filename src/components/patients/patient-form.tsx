@@ -8,6 +8,7 @@ import type { PatientActionState } from '@/actions/patients';
 import type { Patient } from '@/lib/db/schema';
 import { toDateStr } from '@/lib/dates';
 import { BLOOD_TYPES } from '@/lib/validators/patient';
+import { echoChecked, echoValue, formKey } from '@/lib/forms/state';
 
 type Tab = 'personal' | 'contact' | 'insurance';
 
@@ -58,7 +59,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
     : '';
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form key={formKey(state)} action={formAction} className="space-y-6">
       {patient && <input type="hidden" name="patient_id" value={patient.id} />}
 
       {/* Global error */}
@@ -108,7 +109,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
             <select
               id="id_type"
               name="id_type"
-              defaultValue={patient?.idType ?? 'cedula'}
+              defaultValue={echoValue(state, 'id_type') ?? patient?.idType ?? 'cedula'}
               className={fieldClass(!!field('id_type'))}
             >
               <option value="cedula">Cédula</option>
@@ -126,7 +127,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               id="id_number"
               name="id_number"
               type="text"
-              defaultValue={patient?.idNumber ?? ''}
+              defaultValue={echoValue(state, 'id_number') ?? patient?.idNumber ?? ''}
               placeholder="Ej: 12345678"
               className={fieldClass(!!field('id_number'))}
             />
@@ -141,7 +142,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               id="first_name"
               name="first_name"
               type="text"
-              defaultValue={patient?.firstName ?? ''}
+              defaultValue={echoValue(state, 'first_name') ?? patient?.firstName ?? ''}
               placeholder="Ej: María"
               className={fieldClass(!!field('first_name'))}
             />
@@ -156,7 +157,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               id="last_name"
               name="last_name"
               type="text"
-              defaultValue={patient?.lastName ?? ''}
+              defaultValue={echoValue(state, 'last_name') ?? patient?.lastName ?? ''}
               placeholder="Ej: García"
               className={fieldClass(!!field('last_name'))}
             />
@@ -171,7 +172,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               id="date_of_birth"
               name="date_of_birth"
               type="date"
-              defaultValue={dobValue}
+              defaultValue={echoValue(state, 'date_of_birth') ?? dobValue}
               max={todayStr}
               className={fieldClass(!!field('date_of_birth'))}
             />
@@ -185,7 +186,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
             <select
               id="sex"
               name="sex"
-              defaultValue={patient?.sex ?? ''}
+              defaultValue={echoValue(state, 'sex') ?? patient?.sex ?? ''}
               className={fieldClass(!!field('sex'))}
             >
               <option value="" disabled>
@@ -205,7 +206,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
             <select
               id="blood_type"
               name="blood_type"
-              defaultValue={patient?.bloodType ?? ''}
+              defaultValue={echoValue(state, 'blood_type') ?? patient?.bloodType ?? ''}
               className={fieldClass(!!field('blood_type'))}
             >
               <option value="">Desconocido</option>
@@ -221,7 +222,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               id="rh_incompatibility"
               name="rh_incompatibility"
               type="checkbox"
-              defaultChecked={patient?.rhIncompatibility ?? false}
+              defaultChecked={echoChecked(state, 'rh_incompatibility') ?? patient?.rhIncompatibility ?? false}
               value="true"
               className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-600 dark:border-zinc-600"
             />
@@ -238,7 +239,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               id="occupation"
               name="occupation"
               type="text"
-              defaultValue={patient?.occupation ?? ''}
+              defaultValue={echoValue(state, 'occupation') ?? patient?.occupation ?? ''}
               placeholder="Ej: Enfermera, Ingeniero, Estudiante…"
               className={fieldClass(!!field('occupation'))}
             />
@@ -256,7 +257,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               id="phone"
               name="phone"
               type="tel"
-              defaultValue={patient?.phone ?? ''}
+              defaultValue={echoValue(state, 'phone') ?? patient?.phone ?? ''}
               placeholder="Ej: 0412-5551234"
               className={fieldClass(!!field('phone'))}
             />
@@ -271,7 +272,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               id="email"
               name="email"
               type="email"
-              defaultValue={patient?.email ?? ''}
+              defaultValue={echoValue(state, 'email') ?? patient?.email ?? ''}
               placeholder="Ej: paciente@email.com"
               className={fieldClass(!!field('email'))}
             />
@@ -285,7 +286,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
             <textarea
               id="address"
               name="address"
-              defaultValue={patient?.address ?? ''}
+              defaultValue={echoValue(state, 'address') ?? patient?.address ?? ''}
               rows={2}
               placeholder="Ej: Av. Principal, Edif. Torre Norte, Piso 3…"
               className={textareaClass(!!field('address'))}
@@ -301,7 +302,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               id="emergency_contact_name"
               name="emergency_contact_name"
               type="text"
-              defaultValue={patient?.emergencyContactName ?? ''}
+              defaultValue={echoValue(state, 'emergency_contact_name') ?? patient?.emergencyContactName ?? ''}
               placeholder="Nombre completo"
               className={fieldClass(!!field('emergency_contact_name'))}
             />
@@ -315,7 +316,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               id="emergency_contact_phone"
               name="emergency_contact_phone"
               type="tel"
-              defaultValue={patient?.emergencyContactPhone ?? ''}
+              defaultValue={echoValue(state, 'emergency_contact_phone') ?? patient?.emergencyContactPhone ?? ''}
               placeholder="Ej: 0412-5551234"
               className={fieldClass(!!field('emergency_contact_phone'))}
             />
@@ -329,7 +330,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               id="instagram"
               name="instagram"
               type="text"
-              defaultValue={patient?.instagram ?? ''}
+              defaultValue={echoValue(state, 'instagram') ?? patient?.instagram ?? ''}
               placeholder="Ej: @nombre_usuario"
               className={fieldClass(!!field('instagram'))}
             />
@@ -344,7 +345,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
               id="referral_source"
               name="referral_source"
               type="text"
-              defaultValue={patient?.referralSource ?? ''}
+              defaultValue={echoValue(state, 'referral_source') ?? patient?.referralSource ?? ''}
               placeholder="Ej: Instagram, recomendación de Dra. García, Google…"
               className={fieldClass(!!field('referral_source'))}
             />
@@ -361,7 +362,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
             <textarea
               id="insurance_info"
               name="insurance_info"
-              defaultValue={patient?.insuranceInfo ?? ''}
+              defaultValue={echoValue(state, 'insurance_info') ?? patient?.insuranceInfo ?? ''}
               rows={3}
               placeholder="Aseguradora, número de póliza, cobertura…"
               className={textareaClass(!!field('insurance_info'))}
@@ -375,7 +376,7 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
             <textarea
               id="notes"
               name="notes"
-              defaultValue={patient?.notes ?? ''}
+              defaultValue={echoValue(state, 'notes') ?? patient?.notes ?? ''}
               rows={4}
               placeholder="Anotaciones generales sobre el paciente…"
               className={textareaClass(!!field('notes'))}

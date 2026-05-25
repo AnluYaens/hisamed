@@ -19,11 +19,12 @@ import {
   checkOverlap,
   getAppointmentById,
 } from '@/queries/appointments';
+import { formFailure, type FormFailure } from '@/lib/forms/state';
 
 export type AppointmentActionState =
   | null
   | { success: true; appointmentId?: string }
-  | { success: false; error: string; fieldErrors?: Record<string, string[] | undefined> };
+  | FormFailure;
 
 // ─── createAppointment ────────────────────────────────────────────────────────
 
@@ -42,11 +43,10 @@ export async function createAppointment(
   const parsed = appointmentCreateSchema.safeParse(raw);
 
   if (!parsed.success) {
-    return {
-      success: false,
+    return formFailure(formData, {
       error: 'Revisa los datos del formulario',
       fieldErrors: parsed.error.flatten().fieldErrors,
-    };
+    });
   }
 
   const data = parsed.data;
@@ -98,10 +98,10 @@ export async function createAppointment(
   });
 
   if (!result.success) {
-    return {
-      success: false,
+    return formFailure(formData, {
       error: 'El médico ya tiene una cita en ese horario. Por favor elige otro horario.',
-    };
+      fieldErrors: { start_time: ['Horario ocupado'] },
+    });
   }
 
   await auditLog({

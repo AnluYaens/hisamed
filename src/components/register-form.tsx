@@ -6,6 +6,7 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { registerClinic } from '@/actions/register-clinic';
 import { COUNTRIES } from '@/lib/validators/register-clinic';
+import { echoChecked, echoValue, formKey } from '@/lib/forms/state';
 
 const inputClass =
   'flex h-12 w-full rounded-[14px] border border-slate-900/10 bg-white/85 px-4 text-[14.5px] text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-[border-color,box-shadow,background] placeholder:text-slate-400 focus-visible:border-teal-600/50 focus-visible:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/16 disabled:cursor-not-allowed disabled:opacity-50';
@@ -16,7 +17,7 @@ export function RegisterForm() {
   const [state, action, pending] = useActionState(registerClinic, null);
 
   return (
-    <form action={action} className="space-y-4" noValidate>
+    <form key={formKey(state)} action={action} className="space-y-4" noValidate>
       <div className="space-y-1.5">
         <label htmlFor="clinicName" className={labelClass}>
           Nombre de tu consultorio
@@ -28,6 +29,7 @@ export function RegisterForm() {
           autoComplete="organization"
           placeholder="Consultorio Dra. García"
           required
+          defaultValue={echoValue(state, 'clinicName') ?? ''}
           className={inputClass}
           disabled={pending}
         />
@@ -47,6 +49,7 @@ export function RegisterForm() {
           autoComplete="name"
           placeholder="Dr. Ana García"
           required
+          defaultValue={echoValue(state, 'fullName') ?? ''}
           className={inputClass}
           disabled={pending}
         />
@@ -66,6 +69,7 @@ export function RegisterForm() {
           autoComplete="email"
           placeholder="ana@clinica.com"
           required
+          defaultValue={echoValue(state, 'email') ?? ''}
           className={inputClass}
           disabled={pending}
         />
@@ -120,7 +124,7 @@ export function RegisterForm() {
           id="country"
           name="country"
           required
-          defaultValue=""
+          defaultValue={echoValue(state, 'country') ?? ''}
           className={inputClass + ' cursor-pointer appearance-none'}
           disabled={pending}
         >
@@ -145,6 +149,7 @@ export function RegisterForm() {
           type="checkbox"
           value="on"
           required
+          defaultChecked={echoChecked(state, 'terms') ?? false}
           className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-teal-600"
           disabled={pending}
         />
