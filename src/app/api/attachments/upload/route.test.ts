@@ -119,13 +119,33 @@ beforeEach(() => {
     .mockReturnValueOnce('77777777-7777-4777-8777-777777777777');
 });
 
+// The route runs a 2-query storage quota check (clinic plan limit +
+// summed bytes already on disk) between the patient lookup and any
+// optional clinical-note lookup. Tests that reach that point must queue
+// these mocks or the chain returns undefined.
+// The SUM-of-bytes query awaits .where() directly (no .limit() terminator),
+// so its mock must resolve there.
+function selectAtWhere(rows: unknown[]) {
+  return {
+    from: vi.fn().mockReturnThis(),
+    innerJoin: vi.fn().mockReturnThis(),
+    where: vi.fn().mockResolvedValue(rows),
+  };
+}
+
+function queueQuotaOk() {
+  mocks.select
+    .mockReturnValueOnce(selectRows([{ maxStorageMb: 1024 }]))
+    .mockReturnValueOnce(selectAtWhere([{ used: '0' }]));
+}
+
 describe('POST /api/attachments/upload', () => {
   it('rejects uploads linked to a signed clinical note before storing bytes', async () => {
-    mocks.select
-      .mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]))
-      .mockReturnValueOnce(
-        selectRows([{ id: NOTE_ID, authorId: DOCTOR_ID, isSigned: true }]),
-      );
+    mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
+    queueQuotaOk();
+    mocks.select.mockReturnValueOnce(
+      selectRows([{ id: NOTE_ID, authorId: DOCTOR_ID, isSigned: true }]),
+    );
 
     const res = await POST(requestFor({ clinicalNoteId: NOTE_ID, category: 'ultrasound' }));
     const body = await res.json();
@@ -142,11 +162,11 @@ describe('POST /api/attachments/upload', () => {
       clinicId: CLINIC_ID,
       role: 'admin',
     });
-    mocks.select
-      .mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]))
-      .mockReturnValueOnce(
-        selectRows([{ id: NOTE_ID, authorId: DOCTOR_ID, isSigned: false }]),
-      );
+    mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
+    queueQuotaOk();
+    mocks.select.mockReturnValueOnce(
+      selectRows([{ id: NOTE_ID, authorId: DOCTOR_ID, isSigned: false }]),
+    );
 
     const res = await POST(requestFor({ clinicalNoteId: NOTE_ID }));
 
@@ -165,6 +185,7 @@ describe('POST /api/attachments/upload', () => {
 
   it('enforces video magic bytes server-side', async () => {
     mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
+    queueQuotaOk();
 
     const spoofedMp4 = new File([Buffer.from('not an mp4')], 'clip.mp4', {
       type: 'video/mp4',
@@ -179,6 +200,7 @@ describe('POST /api/attachments/upload', () => {
   it('redacts storageKey from successful upload responses', async () => {
     const uploadedAt = new Date('2026-05-11T12:00:00.000Z');
     mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
+    queueQuotaOk();
     mocks.insert.mockReturnValueOnce(
       insertRows([
         {
