@@ -5,7 +5,18 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { ACCESS_COOKIE } from '@/lib/auth/session';
 
-const PUBLIC_PATHS = new Set<string>(['/login', '/forgot-password', '/registro']);
+const PUBLIC_PATHS = new Set<string>([
+  '/login',
+  '/forgot-password',
+  '/registro',
+  // Public legal documents (Spanish default + English).
+  '/terminos',
+  '/privacidad',
+  '/dpa',
+  '/terms',
+  '/privacy',
+  '/dpa-en',
+]);
 
 // Forward the pathname as a request header so server components (e.g. the
 // dashboard layout) can read it via `headers().get('x-pathname')` without

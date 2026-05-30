@@ -33,6 +33,9 @@ RUN apk add --no-cache libc6-compat
 COPY --from=build /app/public ./public
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
+# Legal docs are read from disk at request time (see src/lib/legal.tsx); the
+# standalone trace does not pick them up, so copy them explicitly.
+COPY --from=build /app/legal ./legal
 
 USER node
 
