@@ -21,6 +21,7 @@ PGURL="${MIGRATE_DATABASE_URL//&uselibpqcompat=true/}"
 PGURL="${PGURL//uselibpqcompat=true&/}"
 PGURL="${PGURL//?uselibpqcompat=true/}"
 PGURL="${PGURL//uselibpqcompat=true/}"
+pg_dump "${PGURL}" --no-owner --no-acl | gzip > "${TMPFILE}"
 
 # Sanity check: fail if the dump is suspiciously small (<10KB = something broke)
 SIZE=$(stat -c%s "${TMPFILE}")
