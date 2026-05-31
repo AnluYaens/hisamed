@@ -23,14 +23,27 @@ La ruta recomendada para produccion es:
 
 1. Crea un proyecto Supabase de produccion.
 2. Copia el connection string de Postgres.
-3. Para la app, usa el **Session Pooler** connection string. Evita el Transaction Pooler para migraciones.
-4. Activa SSL en la conexion usando `sslmode=require`.
+3. Hay dos conexiones distintas, con puertos distintos:
+   - **App en runtime → Transaction Pooler (puerto 6543)**. Es la conexion
+     que usa la app (`DATABASE_URL`).
+   - **Migraciones → Session Pooler (puerto 5432)**. drizzle-kit necesita
+     una sesion estable para DDL; va en `MIGRATE_DATABASE_URL`.
+4. Activa SSL. En produccion la app verifica el certificado:
+   `sslmode=verify-full&sslrootcert=/app/certs/supabase-ca.crt` (el CA de
+   Supabase se copia dentro del contenedor). El tooling de migraciones
+   ademas agrega `uselibpqcompat=true` para restaurar semantica libpq.
 5. Para datos clinicos reales bajo HIPAA, no uses un proyecto comun: necesitas BAA, HIPAA add-on, SSL Enforcement, Network Restrictions y PITR segun aplique.
 
-Ejemplo de `DATABASE_URL`:
+Ejemplo de `DATABASE_URL` (app, transaction pooler 6543):
 
 ```bash
-DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
+DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=verify-full&sslrootcert=/app/certs/supabase-ca.crt
+```
+
+Ejemplo de `MIGRATE_DATABASE_URL` (migraciones, session pooler 5432):
+
+```bash
+MIGRATE_DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
 ```
 
 ## Variables de entorno
@@ -38,8 +51,10 @@ DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-us-east-1.pooler.s
 Copia `.env.example` a `.env` en el servidor y ajusta los valores:
 
 ```bash
-# Supabase Postgres
-DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
+# Supabase Postgres — app en runtime (transaction pooler, 6543)
+DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=verify-full&sslrootcert=/app/certs/supabase-ca.crt
+# Supabase Postgres — migraciones (session pooler, 5432)
+MIGRATE_DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
 
 # Solo para nombres de backup/local tooling
 POSTGRES_DB=postgres
@@ -50,7 +65,7 @@ JWT_SECRET=<openssl rand -base64 32>
 JWT_REFRESH_SECRET=<openssl rand -base64 32>
 
 # App
-NEXT_PUBLIC_APP_URL=https://ehr.example.com
+NEXT_PUBLIC_APP_URL=https://hisamed.com
 NODE_ENV=production
 
 # Cloudflare R2
@@ -58,7 +73,7 @@ STORAGE_PROVIDER=r2
 R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
 R2_ACCESS_KEY_ID=<r2-access-key>
 R2_SECRET_ACCESS_KEY=<r2-secret-key>
-R2_BUCKET=clinica-attachments
+R2_BUCKET=ehr-core-attachments
 R2_REGION=auto
 ```
 
@@ -68,13 +83,21 @@ Si tu password de Supabase contiene caracteres especiales, usa la version URL-en
 
 ## Migraciones
 
-Antes de levantar la app por primera vez, ejecuta:
+Las migraciones de produccion se aplican con:
 
 ```bash
-docker compose -f docker-compose.prod.yml --profile tools run --rm migrate
+pnpm db:migrate:prod
 ```
 
-Repite este comando despues de desplegar cambios que incluyan nuevas migraciones.
+Este comando usa `MIGRATE_DATABASE_URL` (session pooler, puerto 5432), que es
+la conexion correcta para DDL. Ejecutalo antes de levantar la app por primera
+vez y de nuevo despues de desplegar cambios con nuevas migraciones.
+
+> ⚠️ **No** uses el servicio `migrate` de `docker-compose.prod.yml`
+> (`docker compose -f docker-compose.prod.yml --profile tools run --rm migrate`)
+> para produccion: ese servicio corre `pnpm db:migrate`, que apunta a la DB
+> **local** (`MIGRATE_TARGET=local`, lee `DATABASE_URL`). Para produccion usa
+> siempre `pnpm db:migrate:prod`.
 
 ## Levantar la app
 
@@ -85,7 +108,8 @@ docker compose -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.prod.yml ps
 ```
 
-La app queda expuesta en `http://SERVER_IP:3000`.
+La app escucha en `127.0.0.1:3000` — **solo localhost**, no expuesta
+publicamente. Caddy va delante y hace el reverse proxy hacia ese puerto.
 
 Si se usa una imagen publicada en registry, define `APP_IMAGE` en `.env`:
 
@@ -105,7 +129,7 @@ docker compose -f docker-compose.prod.yml up -d
 Instala Caddy y crea un `Caddyfile` similar:
 
 ```caddyfile
-ehr.example.com {
+hisamed.com {
   encode zstd gzip
   reverse_proxy 127.0.0.1:3000
 }
@@ -123,10 +147,14 @@ Caddy solicita y renueva certificados automaticamente. Asegura que los puertos 8
 
 Supabase tiene backups administrados, pero manten backups propios fuera de Supabase.
 
+<!-- NOTA: las rutas /var/backups/hisamed y /var/log/hisamed-backup.log de
+     abajo son las esperadas tras renombrar de clinica-mvp a hisamed.
+     VERIFICAR contra el servidor real antes de confiar en ellas. -->
+
 Crear un backup manual:
 
 ```bash
-BACKUP_DIR=/var/backups/clinica-mvp ./scripts/backup-db.sh
+BACKUP_DIR=/var/backups/hisamed ./scripts/backup-db.sh
 ```
 
 Con `DATABASE_URL` remoto, el script usa un contenedor temporal `postgres:16-alpine` para correr `pg_dump`. Con la DB local de `docker-compose.yml`, usa `docker compose exec db`.
@@ -134,16 +162,16 @@ Con `DATABASE_URL` remoto, el script usa un contenedor temporal `postgres:16-alp
 El archivo queda comprimido como `POSTGRES_DB_YYYYMMDDTHHMMSSZ.sql.gz`. El script borra backups de mas de 30 dias. Puedes cambiar la retencion:
 
 ```bash
-RETENTION_DAYS=60 BACKUP_DIR=/var/backups/clinica-mvp ./scripts/backup-db.sh
+RETENTION_DAYS=60 BACKUP_DIR=/var/backups/hisamed ./scripts/backup-db.sh
 ```
 
 Programa cron diario:
 
 ```cron
-15 3 * * * cd /opt/clinica-mvp && BACKUP_DIR=/var/backups/clinica-mvp ./scripts/backup-db.sh >> /var/log/clinica-mvp-backup.log 2>&1
+15 3 * * * cd /opt/hisamed && BACKUP_DIR=/var/backups/hisamed ./scripts/backup-db.sh >> /var/log/hisamed-backup.log 2>&1
 ```
 
-Sincroniza `/var/backups/clinica-mvp` a otro destino, por ejemplo otro servidor, S3/R2 privado o un backup service.
+Sincroniza `/var/backups/hisamed` a otro destino, por ejemplo otro servidor, S3/R2 privado o un backup service.
 
 ## Restaurar un backup
 
@@ -156,7 +184,7 @@ docker compose -f docker-compose.prod.yml stop app
 Restaurar desde un backup propio:
 
 ```bash
-gunzip -c /var/backups/clinica-mvp/postgres_20260424T030000Z.sql.gz | docker run --rm -i postgres:16-alpine psql "$DATABASE_URL"
+gunzip -c /var/backups/hisamed/postgres_20260424T030000Z.sql.gz | docker run --rm -i postgres:16-alpine psql "$DATABASE_URL"
 ```
 
 Si necesitas limpiar el schema antes de restaurar, hazlo solo despues de confirmar que tienes un backup valido:

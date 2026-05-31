@@ -1,3 +1,5 @@
+> 📜 Historical pre-v2 technical spec. Records the original MVP data model and design intent. Current data model is in src/lib/db/schema.ts. Not maintained.
+
 # PRD Técnico — ClinicaMVP
 
 > Este documento es la especificación técnica del producto. No es para lectura casual —

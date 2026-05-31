@@ -1,7 +1,11 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 FILIACION.csv
-/docs
+/docs/HISAMED-FULL-SUMMARY.md
+
+# Private operator notes — contains real infrastructure identifiers
+# (server IP, Supabase project ID, admin email). Must stay untracked.
+docs/HISAMED-FULL-SUMMARY.md
 
 # dependencies
 /node_modules

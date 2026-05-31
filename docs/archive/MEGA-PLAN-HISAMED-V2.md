@@ -1,3 +1,5 @@
+> ✅ COMPLETED — historical record of v2 expansion plan, all phases shipped.
+
 # MEGA PLAN — Hisamed v2: De MVP a Producto Vendible
 
 > Plan completo para convertir Hisamed en un reemplazo superior de HipoSEMG.
