@@ -28,7 +28,12 @@ export default async function NuevoPacientePage() {
           Los campos marcados con <span className="text-red-500">*</span> son obligatorios.
         </p>
 
-        <PatientForm action={createPatient} mode="create" todayStr={todayStr} />
+        <PatientForm
+          action={createPatient}
+          mode="create"
+          todayStr={todayStr}
+          clinicId={session.clinicId}
+        />
       </div>
     </div>
   );

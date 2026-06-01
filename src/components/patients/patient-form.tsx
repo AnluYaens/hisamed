@@ -9,6 +9,18 @@ import type { Patient } from '@/lib/db/schema';
 import { toDateStr } from '@/lib/dates';
 import { BLOOD_TYPES } from '@/lib/validators/patient';
 import { echoChecked, echoValue, formKey } from '@/lib/forms/state';
+import {
+  useUncontrolledFormDraft,
+  type FormSnapshot,
+} from '@/hooks/use-uncontrolled-form-draft';
+import { DraftRestoreBanner } from '@/components/drafts/draft-restore-banner';
+import { patientCreateKey, patientEditKey } from '@/lib/drafts';
+
+// A patient draft has content if any field other than the always-defaulted
+// document type was filled. (A pristine create form only carries id_type.)
+function patientDraftHasContent(snapshot: FormSnapshot): boolean {
+  return Object.entries(snapshot).some(([k, v]) => k !== 'id_type' && v.trim() !== '');
+}
 
 type Tab = 'personal' | 'contact' | 'insurance';
 
@@ -23,6 +35,12 @@ interface PatientFormProps {
   patient?: Patient;
   mode?: 'create' | 'edit';
   /**
+   * Clinic id, used to key the *create* draft so a different clinic's user on
+   * the same browser can never see this clinic's draft (tenant safety). Edit
+   * drafts are keyed by patient id instead.
+   */
+  clinicId?: string;
+  /**
    * "Today" in the clinic's timezone (YYYY-MM-DD). Used as the upper bound
    * of the date-of-birth input so a user in a different timezone than the
    * clinic cannot pick a "future" DOB that's still today for the clinic.
@@ -30,10 +48,33 @@ interface PatientFormProps {
   todayStr: string;
 }
 
-export function PatientForm({ action, patient, mode = 'create', todayStr }: PatientFormProps) {
+export function PatientForm({
+  action,
+  patient,
+  mode = 'create',
+  todayStr,
+  clinicId,
+}: PatientFormProps) {
   const [state, formAction, isPending] = useActionState(action, null);
   const [activeTab, setActiveTab] = useState<Tab>('personal');
   const router = useRouter();
+
+  // ── Local draft persistence ────────────────────────────────────────────────
+  // Edit keyed by patient id; create keyed by clinic id (tenant-safe). When
+  // neither id is available the hook is disabled (storageKey null).
+  const draftKey =
+    mode === 'edit'
+      ? patient
+        ? patientEditKey(patient.id)
+        : null
+      : clinicId
+        ? patientCreateKey(clinicId)
+        : null;
+  const draft = useUncontrolledFormDraft({
+    storageKey: draftKey,
+    hasContent: patientDraftHasContent,
+  });
+  const { clearAndReset: clearDraftState, cancelSubmit: cancelDraftSubmit } = draft;
 
   // After a successful edit, pull fresh server data so the patient header,
   // summary card, and other RSC-rendered slots reflect the new values
@@ -44,6 +85,14 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
       router.refresh();
     }
   }, [state, mode, router]);
+
+  // Clear the draft on a successful save; re-arm on a failed submit (a
+  // validation failure remounts the <form> subtree but keeps this component
+  // mounted, so the unmount-time cleanup won't wrongly fire).
+  useEffect(() => {
+    if (state?.success) clearDraftState();
+    else if (state && !state.success) cancelDraftSubmit();
+  }, [state, clearDraftState, cancelDraftSubmit]);
 
   const errors =
     state && !state.success && 'fieldErrors' in state ? state.fieldErrors : {};
@@ -59,8 +108,23 @@ export function PatientForm({ action, patient, mode = 'create', todayStr }: Pati
     : '';
 
   return (
-    <form key={formKey(state)} action={formAction} className="space-y-6">
+    <form
+      key={formKey(state)}
+      action={formAction}
+      onSubmit={() => draft.markSubmitting()}
+      className="space-y-6"
+      {...draft.formProps}
+    >
       {patient && <input type="hidden" name="patient_id" value={patient.id} />}
+
+      {/* Offer to restore a locally-saved draft (never auto-loaded). */}
+      {draft.pendingDraft && (
+        <DraftRestoreBanner
+          savedAt={draft.pendingDraft.savedAt}
+          onRestore={draft.restore}
+          onDiscard={draft.discard}
+        />
+      )}
 
       {/* Global error */}
       {state && !state.success && (

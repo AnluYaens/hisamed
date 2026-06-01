@@ -32,6 +32,9 @@ import {
   type AttachmentMeta as UltrasoundAttachmentMeta,
 } from '@/components/clinical-notes/ultrasound-section';
 import { consultationReasonPhrases } from '@/lib/constants/medical-phrases';
+import { useFormDraft } from '@/hooks/use-form-draft';
+import { DraftRestoreBanner } from '@/components/drafts/draft-restore-banner';
+import { clinicalNoteCreateKey, clinicalNoteEditKey } from '@/lib/drafts';
 
 // ─── Shared input classes ─────────────────────────────────────────────────────
 
@@ -196,6 +199,34 @@ function serializeSpecialty(s: SpecialtyState): ClinicalNoteSpecialtyData {
   return out;
 }
 
+// ─── Local draft snapshot ─────────────────────────────────────────────────────
+// The whole editable form state, persisted to localStorage so a dropped
+// connection mid-write doesn't lose the note. note_date is intentionally NOT
+// part of the "has content" check — a pristine create form already has it set
+// to today, and we don't want to offer to restore an otherwise-empty draft.
+
+interface ClinicalNoteDraft {
+  textData: TextFields;
+  diagnoses: DiagnosisEntry[];
+  specialty: SpecialtyState;
+}
+
+function clinicalNoteDraftHasContent(d: ClinicalNoteDraft): boolean {
+  const t = d.textData;
+  const textFilled = [
+    t.chief_complaint,
+    t.subjective,
+    t.objective,
+    t.assessment,
+    t.plan,
+    t.internal_notes,
+  ].some((s) => s.trim() !== '');
+  if (textFilled) return true;
+  if (d.diagnoses.length > 0) return true;
+  // Any specialty/exam/ultrasound field entered counts as content.
+  return Object.values(serializeSpecialty(d.specialty)).some((v) => v !== undefined);
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 export interface ExistingNote {
@@ -296,6 +327,20 @@ export function ClinicalNoteForm({
   // wipe the user's in-progress edits.
   const recordKey = note ? recordKeyFromUpdatedAt(note.updatedAt) : 'new';
 
+  // ── Local draft persistence ────────────────────────────────────────────────
+  // Keyed so drafts never collide across patients (create) or notes (edit).
+  const draftKey = isEdit ? clinicalNoteEditKey(note.id) : clinicalNoteCreateKey(patientId);
+  const draft = useFormDraft<ClinicalNoteDraft>({
+    storageKey: draftKey,
+    value: { textData, diagnoses, specialty },
+    hasContent: clinicalNoteDraftHasContent,
+    onRestore: (d) => {
+      setTextData(d.textData);
+      setDiagnoses(d.diagnoses);
+      setSpecialty(d.specialty);
+    },
+  });
+
   const signSucceeded = signState?.success && signState.signed === true;
 
   useEffect(() => {
@@ -346,6 +391,14 @@ export function ClinicalNoteForm({
       signAfterUpdate.current = false;
     }
   }, [isUpdating, updateState, note?.id, signAction]);
+
+  // Clear the local draft once the note is safely persisted; re-arm saving if
+  // a submit comes back with an error (validation keeps us mounted).
+  const { clearAndReset: clearDraftState, cancelSubmit: cancelDraftSubmit } = draft;
+  useEffect(() => {
+    if (state?.success) clearDraftState();
+    else if (state && !state.success) cancelDraftSubmit();
+  }, [state, clearDraftState, cancelDraftSubmit]);
 
   const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
 
@@ -407,6 +460,9 @@ export function ClinicalNoteForm({
 
   function handleSaveDraft() {
     const fd = buildFormData();
+    // Arm draft cleanup: on a create the action redirects on success and the
+    // component unmounts, so we clear the local draft from the unmount path.
+    draft.markSubmitting();
     // useActionState actions must run inside startTransition when invoked from
     // onSubmit (not passed as form action), or isPending and React dev warnings break.
     startTransition(() => {
@@ -431,6 +487,7 @@ export function ClinicalNoteForm({
     // effect above once updateState resolves.
     setSignDialogOpen(false);
     signAfterUpdate.current = true;
+    draft.markSubmitting();
     startTransition(() => {
       updateAction(buildFormData());
     });
@@ -451,6 +508,15 @@ export function ClinicalNoteForm({
         }}
         className="space-y-5"
       >
+        {/* Offer to restore a locally-saved draft (never auto-loaded). */}
+        {draft.pendingDraft && (
+          <DraftRestoreBanner
+            savedAt={draft.pendingDraft.savedAt}
+            onRestore={draft.restore}
+            onDiscard={draft.discard}
+          />
+        )}
+
         {/* Status banners */}
         {state && !state.success && (
           <div className="flex items-start gap-2.5 rounded-lg border border-red-600/20 bg-red-100/70 backdrop-blur-md px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">

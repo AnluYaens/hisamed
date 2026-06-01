@@ -56,7 +56,12 @@ export const config = {
   // Run on all routes except Next internals, /api, static files, and metadata.
   // API route handlers enforce their own auth via `requireSession()` and must
   // return JSON (not an HTML redirect) on 401, so the proxy skips them entirely.
+  //
+  // The PWA assets (manifest, service worker, icons) are public, non-PHI static
+  // metadata and MUST be fetchable without a session — the browser loads the
+  // manifest (sometimes uncredentialed) and registers the SW from the login
+  // page, so they cannot be behind the auth redirect.
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|sw.js|icons).*)',
   ],
 };
