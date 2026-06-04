@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { clinicalNotes, patients, vitalSigns } from '@/lib/db/schema';
 import { requireRole } from '@/lib/auth/session';
+import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { generateId } from '@/lib/utils/generate-id';
 import { computeBmi, vitalSignsCreateSchema } from '@/lib/validators/vital-signs';
@@ -38,6 +39,8 @@ export async function createVitalSigns(
   } catch {
     return { success: false, error: 'No autorizado' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const raw = {
     patient_id: (formData.get('patient_id') as string | null) ?? '',
@@ -184,6 +187,8 @@ export async function attachVitalSignsToNote(
       error: 'Solo médicos pueden asociar signos vitales a una nota',
     };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const parsed = attachSchema.safeParse({
     vital_signs_id: formData.get('vital_signs_id'),

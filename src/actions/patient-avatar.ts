@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { patients } from '@/lib/db/schema';
 import { requireSession } from '@/lib/auth/session';
+import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { generateId } from '@/lib/utils/generate-id';
 import { deleteFile, uploadFile } from '@/lib/storage';
@@ -53,6 +54,8 @@ export async function updatePatientAvatar(
   if (typeof patientId !== 'string' || !/^[0-9a-f-]{20,}$/i.test(patientId)) {
     return { success: false, error: 'ID de paciente inválido' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const file = formData.get('file');
   if (!(file instanceof File)) {
@@ -157,6 +160,8 @@ export async function removePatientAvatar(
   if (typeof patientId !== 'string' || !/^[0-9a-f-]{20,}$/i.test(patientId)) {
     return { success: false, error: 'ID de paciente inválido' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const rows = await db
     .select({ id: patients.id, avatarStorageKey: patients.avatarStorageKey })

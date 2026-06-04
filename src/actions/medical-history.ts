@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { medicalHistories, patients } from '@/lib/db/schema';
 import { requireRole } from '@/lib/auth/session';
+import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import {
   medicalHistoryUpdateSchema,
@@ -56,6 +57,8 @@ export async function updateMedicalHistory(
   } catch {
     return { success: false, error: 'Solo administradores y médicos pueden editar la historia clínica' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   // Parse specialty_data JSON string from hidden input
   let specialtyDataRaw: unknown = undefined;

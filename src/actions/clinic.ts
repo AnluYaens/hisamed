@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { clinics } from '@/lib/db/schema';
 import { requireRole } from '@/lib/auth/session';
+import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { clinicSettingsSchema } from '@/lib/validators/user';
 import { formFailure, type FormFailure } from '@/lib/forms/state';
@@ -21,6 +22,8 @@ export async function updateClinicSettings(
   } catch {
     return { success: false, error: 'No tienes permisos para modificar la configuración' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = clinicSettingsSchema.safeParse(raw);

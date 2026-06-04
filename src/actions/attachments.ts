@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { attachments, clinicalNotes, patients } from '@/lib/db/schema';
 import { requireSession } from '@/lib/auth/session';
+import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { deleteFile } from '@/lib/storage';
 
@@ -35,6 +36,8 @@ export async function deleteAttachment(
   } catch {
     return { success: false, error: 'No autenticado' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const parsed = deleteSchema.safeParse({
     attachment_id: formData.get('attachment_id'),

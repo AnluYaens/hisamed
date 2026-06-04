@@ -105,5 +105,5 @@ export async function registerClinic(
 
   await setAuthCookiesInAction({ accessToken, refreshToken });
 
-  redirect('/');
+  redirect('/inicio');
 }

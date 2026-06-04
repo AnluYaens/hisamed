@@ -3,6 +3,7 @@
 import { db } from '@/lib/db';
 import { patients, medicalHistories } from '@/lib/db/schema';
 import { requireRole } from '@/lib/auth/session';
+import { isDemoSession, DEMO_READONLY_MESSAGE } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { generateId } from '@/lib/utils/generate-id';
 import { checkDuplicateIdNumber } from '@/queries/patients';
@@ -47,6 +48,10 @@ export async function importPatients(rows: CsvImportRow[]): Promise<ImportResult
     session = await requireRole(['admin', 'doctor']);
   } catch {
     return { success: false, imported: 0, errors: [], error: 'No tienes permisos para importar pacientes' };
+  }
+
+  if (isDemoSession(session)) {
+    return { success: false, imported: 0, errors: [], error: DEMO_READONLY_MESSAGE };
   }
 
   if (!Array.isArray(rows) || rows.length === 0) {

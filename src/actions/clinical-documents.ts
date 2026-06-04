@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { clinicalDocuments, clinicalNotes, patients } from '@/lib/db/schema';
 import { requireRole } from '@/lib/auth/session';
+import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { generateId } from '@/lib/utils/generate-id';
 import {
@@ -63,6 +64,8 @@ export async function createClinicalDocument(
       error: 'Solo los médicos pueden generar documentos clínicos',
     };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const patientId = formData.get('patient_id');
   if (typeof patientId !== 'string' || patientId.length === 0) {

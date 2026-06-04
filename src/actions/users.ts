@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { users, clinics } from '@/lib/db/schema';
 import { requireRole } from '@/lib/auth/session';
+import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { hashPassword } from '@/lib/auth/password';
 import { generateId } from '@/lib/utils/generate-id';
@@ -30,6 +31,8 @@ export async function createUser(
   } catch {
     return { success: false, error: 'No tienes permisos para crear usuarios' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = userCreateSchema.safeParse(raw);
@@ -114,6 +117,8 @@ export async function updateUser(
     return { success: false, error: 'No tienes permisos para editar usuarios' };
   }
 
+  if (isDemoSession(session)) return demoWriteBlocked();
+
   const raw = Object.fromEntries(formData.entries());
   const parsed = userUpdateSchema.safeParse(raw);
 
@@ -175,6 +180,8 @@ export async function resetUserPassword(
   } catch {
     return { success: false, error: 'No tienes permisos para resetear contraseñas' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = resetPasswordSchema.safeParse(raw);

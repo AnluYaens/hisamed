@@ -24,6 +24,80 @@ export function getResendConfig(): ResendConfig | null {
   return { apiKey, fromEmail, fromName };
 }
 
+/** Where access requests from the landing page are delivered. */
+export const ACCESS_REQUEST_RECIPIENT =
+  process.env.ACCESS_REQUEST_EMAIL?.trim() || 'soporte@hisamed.com';
+
+export interface AccessRequestEmailParams {
+  name: string;
+  email: string;
+  whatsapp: string;
+  clinic: string;
+  specialty: string;
+}
+
+/**
+ * Sends a "Solicitar acceso" request from the landing page to support.
+ *
+ * No DB table backs these yet — email is sufficient at the current volume.
+ * If volume grows, persist them to a `waitlist` table (and keep this email as
+ * a notification). Returns a discriminated result instead of throwing so the
+ * Server Action can surface a clean Spanish message.
+ */
+export async function sendAccessRequestEmail(
+  config: ResendConfig,
+  params: AccessRequestEmailParams,
+): Promise<SendEmailResult> {
+  const client = new Resend(config.apiKey);
+  const from = `${config.fromName} <${config.fromEmail}>`;
+
+  const rows: Array<[string, string]> = [
+    ['Nombre', params.name],
+    ['Correo', params.email],
+    ['WhatsApp', params.whatsapp],
+    ['Consultorio', params.clinic],
+    ['Especialidad', params.specialty],
+  ];
+  const text = rows.map(([k, v]) => `${k}: ${v}`).join('\n');
+  const html = `<h2>Nueva solicitud de acceso — Hisamed</h2><table cellpadding="6">${rows
+    .map(
+      ([k, v]) =>
+        `<tr><td style="font-weight:600">${k}</td><td>${escapeHtml(v)}</td></tr>`,
+    )
+    .join('')}</table>`;
+
+  try {
+    const response = await client.emails.send({
+      from,
+      to: ACCESS_REQUEST_RECIPIENT,
+      replyTo: params.email,
+      subject: `Solicitud de acceso: ${params.name} (${params.clinic})`,
+      html,
+      text,
+    });
+
+    if (response.error) {
+      console.error('[email/resend] access request send error', {
+        name: response.error.name,
+        message: response.error.message,
+      });
+      return { ok: false, errorMessage: 'No se pudo enviar la solicitud' };
+    }
+    return { ok: true, id: response.data?.id };
+  } catch (err) {
+    console.error('[email/resend] access request threw', err instanceof Error ? err.message : err);
+    return { ok: false, errorMessage: 'No se pudo enviar la solicitud' };
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 export interface SendPatientHistoryEmailParams {
   to: string;
   subject: string;

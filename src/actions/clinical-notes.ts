@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { appointments, clinicalNotes, patients } from '@/lib/db/schema';
 import { requireRole } from '@/lib/auth/session';
+import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { generateId } from '@/lib/utils/generate-id';
 import {
@@ -135,6 +136,8 @@ export async function createClinicalNote(
     };
   }
 
+  if (isDemoSession(session)) return demoWriteBlocked();
+
   const specialty = parseSpecialtyData(formData);
   if (!specialty.ok) {
     return { success: false, error: specialty.error };
@@ -243,6 +246,8 @@ export async function updateClinicalNote(
       error: 'Solo médicos pueden editar notas de evolución',
     };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const specialty = parseSpecialtyData(formData);
   if (!specialty.ok) {
@@ -390,6 +395,8 @@ export async function signClinicalNote(
       error: 'Solo médicos pueden firmar notas de evolución',
     };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const parsed = clinicalNoteSignSchema.safeParse({
     note_id: formData.get('note_id'),

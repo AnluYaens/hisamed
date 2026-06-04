@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { patients, patientPartners } from '@/lib/db/schema';
 import { requireSession } from '@/lib/auth/session';
+import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { generateId } from '@/lib/utils/generate-id';
 import { deleteFile, uploadFile } from '@/lib/storage';
@@ -50,6 +51,8 @@ export async function updatePartnerAvatar(
   if (typeof patientId !== 'string' || !/^[0-9a-f-]{20,}$/i.test(patientId)) {
     return { success: false, error: 'ID de paciente inválido' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   // Verify patient belongs to clinic
   const patientRows = await db
@@ -137,6 +140,8 @@ export async function removePartnerAvatar(
   if (typeof patientId !== 'string' || !/^[0-9a-f-]{20,}$/i.test(patientId)) {
     return { success: false, error: 'ID de paciente inválido' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const patientRows = await db
     .select({ id: patients.id })

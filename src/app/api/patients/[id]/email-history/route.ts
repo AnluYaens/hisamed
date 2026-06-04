@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { getSession } from '@/lib/auth/session';
+import { isDemoSession, DEMO_READONLY_MESSAGE } from '@/lib/auth/demo';
 import { auditLog, safeAuditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { enforceRateLimits } from '@/lib/rate-limit';
 import { getFullClinic } from '@/queries/clinic';
@@ -37,6 +38,11 @@ export async function POST(
 
   if (!ALLOWED_ROLES.has(session.role as 'admin' | 'doctor')) {
     return jsonNoStore({ success: false, error: 'Sin permisos' }, 403);
+  }
+
+  // Read-only demo account: never send outbound email from demo data.
+  if (isDemoSession(session)) {
+    return jsonNoStore({ success: false, error: DEMO_READONLY_MESSAGE }, 403);
   }
 
   const { id } = await ctx.params;

@@ -6,6 +6,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { ACCESS_COOKIE } from '@/lib/auth/session';
 
 const PUBLIC_PATHS = new Set<string>([
+  // Marketing landing (root) + the demo auto-login entry point.
+  '/',
+  '/demo',
   '/login',
   '/forgot-password',
   '/registro',
@@ -34,6 +37,13 @@ function withPathname(request: NextRequest): NextResponse {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Logged-in visitors landing on the marketing root are sent straight to the
+  // dashboard home. Presence of the access cookie is sufficient here — the
+  // dashboard layout still re-verifies the token server-side.
+  if (pathname === '/' && request.cookies.has(ACCESS_COOKIE)) {
+    return NextResponse.redirect(new URL('/inicio', request.url));
+  }
 
   if (PUBLIC_PATHS.has(pathname)) {
     return withPathname(request);

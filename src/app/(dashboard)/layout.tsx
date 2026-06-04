@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { getSession } from '@/lib/auth/session';
+import { isDemoSession } from '@/lib/auth/demo';
 import { getClinicSubscription } from '@/queries/clinic';
 import { LogoutButton } from '@/components/logout-button';
 import { SidebarNav } from '@/components/sidebar-nav';
@@ -14,6 +15,7 @@ import { GlobalSearch } from '@/components/search/global-search';
 import { ToastProvider } from '@/components/ui/toast';
 import { BrandLogo } from '@/components/brand-logo';
 import { InstallButton } from '@/components/pwa/install-button';
+import { DemoBanner } from '@/components/demo/demo-banner';
 
 const roleLabels: Record<string, string> = {
   admin: 'Administrador',
@@ -89,6 +91,7 @@ export default async function DashboardLayout({
   const isConfigPage = pathname.startsWith('/configuracion');
 
   const roleLabel = roleLabels[user.role] ?? user.role;
+  const isDemo = isDemoSession(session);
 
   return (
     // Two frosted panels float over the ambient body backdrop, separated by a
@@ -145,12 +148,15 @@ export default async function DashboardLayout({
               {getInitials(user.fullName)}
             </span>
             <InstallButton />
-            <LogoutButton />
+            <LogoutButton isDemo={isDemo} />
           </div>
         </header>
 
+        {/* ── Demo banner ── */}
+        {isDemo && <DemoBanner />}
+
         {/* ── Trial banner ── */}
-        {subscription.status === 'trialing' && !subscription.isTrialExpired && (
+        {!isDemo && subscription.status === 'trialing' && !subscription.isTrialExpired && (
           <div
             className={[
               'flex shrink-0 items-center justify-between gap-3 px-4 py-2.5 text-[13px] lg:px-6',

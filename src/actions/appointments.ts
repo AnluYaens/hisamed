@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { appointments } from '@/lib/db/schema';
 import { requireSession } from '@/lib/auth/session';
+import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { generateId } from '@/lib/utils/generate-id';
 import {
@@ -38,6 +39,8 @@ export async function createAppointment(
   } catch {
     return { success: false, error: 'No autenticado' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = appointmentCreateSchema.safeParse(raw);
@@ -136,6 +139,8 @@ export async function updateAppointmentStatus(
     return { success: false, error: 'No autenticado' };
   }
 
+  if (isDemoSession(session)) return demoWriteBlocked();
+
   const raw = Object.fromEntries(formData.entries());
   const parsed = appointmentStatusUpdateSchema.safeParse(raw);
 
@@ -199,6 +204,8 @@ export async function cancelAppointment(
   } catch {
     return { success: false, error: 'No autenticado' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = appointmentCancelSchema.safeParse(raw);

@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { patients, medicalHistories, patientPartners, clinics } from '@/lib/db/schema';
 import { requireSession, requireRole } from '@/lib/auth/session';
+import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { generateId } from '@/lib/utils/generate-id';
 import { patientCreateSchema, patientUpdateSchema, partnerUpsertSchema } from '@/lib/validators/patient';
@@ -30,6 +31,8 @@ export async function createPatient(
   } catch {
     return { success: false, error: 'No autenticado' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = patientCreateSchema.safeParse(raw);
@@ -132,6 +135,8 @@ export async function updatePatient(
     return { success: false, error: 'No autenticado' };
   }
 
+  if (isDemoSession(session)) return demoWriteBlocked();
+
   const raw = Object.fromEntries(formData.entries());
   const parsed = patientUpdateSchema.safeParse(raw);
 
@@ -220,6 +225,8 @@ export async function togglePatientActive(
     return { success: false, error: 'No tienes permisos para activar/desactivar pacientes' };
   }
 
+  if (isDemoSession(session)) return demoWriteBlocked();
+
   const patientId = formData.get('patient_id') as string;
   if (!patientId) {
     return { success: false, error: 'ID de paciente requerido' };
@@ -265,6 +272,8 @@ export async function upsertPatientPartner(
   } catch {
     return { success: false, error: 'No autenticado' };
   }
+
+  if (isDemoSession(session)) return demoWriteBlocked();
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = partnerUpsertSchema.safeParse(raw);

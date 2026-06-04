@@ -3,6 +3,7 @@ import { and, eq, sum } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { attachments, clinicalNotes, clinics, patients } from '@/lib/db/schema';
 import { getSession } from '@/lib/auth/session';
+import { isDemoSession, DEMO_READONLY_MESSAGE } from '@/lib/auth/demo';
 import { auditLog, safeAuditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { generateId } from '@/lib/utils/generate-id';
@@ -84,6 +85,11 @@ export async function POST(request: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
+  }
+
+  // Read-only demo account: never persist uploads.
+  if (isDemoSession(session)) {
+    return NextResponse.json({ success: false, error: DEMO_READONLY_MESSAGE }, { status: 403 });
   }
 
   // Rate limit BEFORE buffering the multipart body: 30 uploads/hour per user.

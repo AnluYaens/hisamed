@@ -19,7 +19,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/', label: 'Inicio', icon: Home, group: 'primary' },
+  { href: '/inicio', label: 'Inicio', icon: Home, group: 'primary' },
   { href: '/pacientes', label: 'Pacientes', icon: Users, group: 'primary' },
   { href: '/agenda', label: 'Agenda', icon: CalendarDays, group: 'primary' },
   { href: '/reportes', label: 'Reportes', icon: BarChart3, roles: ['admin', 'doctor'], group: 'primary' },
@@ -75,7 +75,7 @@ export function SidebarNav({ role, onNavigate }: SidebarNavProps) {
   });
 
   const isItemActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href);
+    href === '/inicio' ? pathname === '/inicio' : pathname.startsWith(href);
 
   const primary = visibleItems.filter((i) => i.group === 'primary');
   const config = visibleItems.filter((i) => i.group === 'config');

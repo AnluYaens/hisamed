@@ -13,7 +13,7 @@ const inputClass =
 // path that doesn't start with a single `/`. Prevents open-redirect phishing
 // via crafted `/login?redirect=...` links.
 function safeRedirectTarget(raw: string | null): string {
-  const FALLBACK = '/';
+  const FALLBACK = '/inicio';
   if (!raw) return FALLBACK;
   if (raw.length > 512) return FALLBACK;
   if (!raw.startsWith('/')) return FALLBACK;
