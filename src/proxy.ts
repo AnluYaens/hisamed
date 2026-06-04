@@ -4,6 +4,7 @@
 // each Server Action and Route Handler via `getSession()` / `requireRole()`.
 import { NextResponse, type NextRequest } from 'next/server';
 import { ACCESS_COOKIE } from '@/lib/auth/session';
+import { absoluteUrl } from '@/lib/url';
 
 const PUBLIC_PATHS = new Set<string>([
   // Marketing landing (root) + the demo auto-login entry point.
@@ -42,7 +43,7 @@ export function proxy(request: NextRequest) {
   // dashboard home. Presence of the access cookie is sufficient here — the
   // dashboard layout still re-verifies the token server-side.
   if (pathname === '/' && request.cookies.has(ACCESS_COOKIE)) {
-    return NextResponse.redirect(new URL('/inicio', request.url));
+    return NextResponse.redirect(absoluteUrl('/inicio', request));
   }
 
   if (PUBLIC_PATHS.has(pathname)) {
@@ -54,7 +55,7 @@ export function proxy(request: NextRequest) {
     return withPathname(request);
   }
 
-  const loginUrl = new URL('/login', request.url);
+  const loginUrl = new URL(absoluteUrl('/login', request));
   const target = `${pathname}${request.nextUrl.search}`;
   if (target && target !== '/') {
     loginUrl.searchParams.set('redirect', target);

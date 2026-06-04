@@ -5,6 +5,7 @@ import { users } from '@/lib/db/schema';
 import { generateAccessToken, generateRefreshToken } from '@/lib/auth/tokens';
 import { setAuthCookies } from '@/lib/auth/cookies';
 import { DEMO_CLINIC_ID, DEMO_USER_ID } from '@/lib/auth/demo';
+import { absoluteUrl } from '@/lib/url';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
   // The demo account has not been seeded (or was disabled). Fail closed by
   // sending the visitor back to the landing page rather than 500-ing.
   if (!demoUser) {
-    return NextResponse.redirect(new URL('/?demo=unavailable', request.url));
+    return NextResponse.redirect(absoluteUrl('/?demo=unavailable', request));
   }
 
   const claims = {
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
     generateRefreshToken(claims),
   ]);
 
-  const response = NextResponse.redirect(new URL('/inicio', request.url));
+  const response = NextResponse.redirect(absoluteUrl('/inicio', request));
   setAuthCookies(response, { accessToken, refreshToken });
   return response;
 }
