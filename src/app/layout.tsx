@@ -24,10 +24,8 @@ export const metadata: Metadata = {
     title: "Hisamed",
     statusBarStyle: "default",
   },
-  icons: {
-    icon: "/icons/icon-192.png",
-    apple: "/icons/apple-touch-icon.png",
-  },
+  // No manual `icons` here — Next auto-generates the <link> tags from the
+  // file-based conventions in src/app (favicon.ico, icon.png, apple-icon.png).
 };
 
 export const viewport: Viewport = {

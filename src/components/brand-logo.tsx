@@ -1,4 +1,4 @@
-import { Activity } from 'lucide-react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 interface BrandLogoProps {
@@ -12,15 +12,16 @@ interface BrandLogoProps {
 }
 
 const markSizes = {
-  sm: 'h-8 w-8 rounded-lg',
-  md: 'h-9 w-9 rounded-xl',
-  lg: 'h-14 w-14 rounded-2xl',
+  sm: 'h-8 w-8',
+  md: 'h-9 w-9',
+  lg: 'h-14 w-14',
 } as const;
 
-const iconSizes = {
-  sm: 'h-4 w-4',
-  md: 'h-5 w-5',
-  lg: 'h-7 w-7',
+// Pixel dimensions matching markSizes — next/image needs explicit width/height.
+const markPx = {
+  sm: 32,
+  md: 36,
+  lg: 56,
 } as const;
 
 const textSizes = {
@@ -38,16 +39,14 @@ export function BrandLogo({
 }: BrandLogoProps) {
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
-      <span
-        className={cn(
-          'flex shrink-0 items-center justify-center bg-[linear-gradient(135deg,#14B8A6,#0F766E)] shadow-[0_4px_10px_-3px_rgba(13,148,136,0.45),inset_0_1px_0_rgba(255,255,255,0.3)]',
-          size === 'lg' &&
-            'shadow-[0_12px_24px_-8px_rgba(13,148,136,0.55),inset_0_1px_0_rgba(255,255,255,0.32)]',
-          markSizes[size],
-        )}
-      >
-        <Activity className={cn('text-white', iconSizes[size])} strokeWidth={2.5} />
-      </span>
+      <Image
+        src="/icon.png"
+        alt="Hisamed"
+        width={markPx[size]}
+        height={markPx[size]}
+        className={cn('shrink-0', markSizes[size])}
+        priority
+      />
       {!iconOnly && (
         <span
           className={cn(
