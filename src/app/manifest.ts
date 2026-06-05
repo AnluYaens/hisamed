@@ -12,7 +12,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Hisamed',
     short_name: 'Hisamed',
     description:
-      'Sistema de historia clínica electrónica para ginecología y medicina reproductiva',
+      'Historia clínica electrónica para médicos de consulta privada en Latinoamérica',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
