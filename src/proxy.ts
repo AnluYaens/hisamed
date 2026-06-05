@@ -71,8 +71,10 @@ export const config = {
   // The PWA assets (manifest, service worker, icons) are public, non-PHI static
   // metadata and MUST be fetchable without a session — the browser loads the
   // manifest (sometimes uncredentialed) and registers the SW from the login
-  // page, so they cannot be behind the auth redirect.
+  // page, so they cannot be behind the auth redirect. The same applies to
+  // `/.well-known/*` (e.g. security.txt) — public, well-known static resources
+  // that scanners and humans fetch without credentials.
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|sw.js|icons).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|sw.js|icons|\\.well-known).*)',
   ],
 };
