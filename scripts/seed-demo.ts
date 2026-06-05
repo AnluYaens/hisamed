@@ -117,7 +117,7 @@ async function main() {
     clinicId: DEMO_CLINIC_ID,
     email: DEMO_USER_EMAIL,
     passwordHash,
-    fullName: "Dr. Demo Ejemplo",
+    fullName: "Demo Ejemplo",
     role: "doctor",
     isActive: true,
   });

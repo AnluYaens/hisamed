@@ -43,6 +43,21 @@ export interface LandingCopy {
       or: string;
     };
   };
+  feedback: {
+    heading: string;
+    body: string;
+    category: string;
+    categoryBug: string;
+    categorySuggestion: string;
+    categoryGeneral: string;
+    rating: string;
+    message: string;
+    email: string;
+    emailPlaceholder: string;
+    submit: string;
+    submitting: string;
+    success: string;
+  };
   footer: {
     terms: string;
     privacy: string;
@@ -113,6 +128,21 @@ export const COPY: Record<Lang, LandingCopy> = {
         or: 'o',
       },
     },
+    feedback: {
+      heading: 'Comparte tu opinión',
+      body: 'Cuéntanos qué te parece Hisamed. Tu comentario nos ayuda a mejorar.',
+      category: 'Categoría',
+      categoryBug: 'Error / Bug',
+      categorySuggestion: 'Sugerencia / Funcionalidad',
+      categoryGeneral: 'Comentario general',
+      rating: '¿Cómo calificarías tu experiencia?',
+      message: 'Mensaje',
+      email: 'Correo (opcional)',
+      emailPlaceholder: 'Para darte seguimiento',
+      submit: 'Enviar comentario',
+      submitting: 'Enviando…',
+      success: '¡Gracias por tu comentario!',
+    },
     footer: {
       terms: 'Términos',
       privacy: 'Privacidad',
@@ -180,6 +210,21 @@ export const COPY: Record<Lang, LandingCopy> = {
         whatsappButton: 'I prefer WhatsApp',
         or: 'or',
       },
+    },
+    feedback: {
+      heading: 'Share your feedback',
+      body: 'Tell us what you think of Hisamed. Your feedback helps us improve.',
+      category: 'Category',
+      categoryBug: 'Error / Bug',
+      categorySuggestion: 'Suggestion / Feature',
+      categoryGeneral: 'General comment',
+      rating: 'How would you rate your experience?',
+      message: 'Message',
+      email: 'Email (optional)',
+      emailPlaceholder: 'So we can follow up',
+      submit: 'Send feedback',
+      submitting: 'Sending…',
+      success: 'Thanks for your feedback!',
     },
     footer: {
       terms: 'Terms',

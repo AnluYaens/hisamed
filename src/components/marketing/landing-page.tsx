@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
 import { AccessForm } from '@/components/marketing/access-form';
+import { FeedbackForm } from '@/components/marketing/feedback-form';
 import { COPY, type Lang } from '@/components/marketing/copy';
 
 const FEATURE_ICONS = [FileText, Smartphone, ShieldCheck, Globe] as const;
@@ -157,6 +158,21 @@ export function LandingPage({ initialLang }: { initialLang: Lang }) {
               <p className="mt-2 mb-5 text-sm leading-relaxed text-slate-600">{t.cta.access.body}</p>
               <AccessForm lang={lang} t={t.cta.access} />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Feedback ── */}
+      <section id="opinion" className="scroll-mt-8 border-t border-slate-900/5">
+        <div className="mx-auto max-w-2xl px-5 py-16 sm:px-8 lg:py-20">
+          <h2 className="text-center text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            {t.feedback.heading}
+          </h2>
+          <p className="mx-auto mt-3 max-w-lg text-center text-sm leading-relaxed text-slate-600">
+            {t.feedback.body}
+          </p>
+          <div className="mt-10 rounded-2xl border border-slate-900/5 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-8">
+            <FeedbackForm t={t.feedback} />
           </div>
         </div>
       </section>

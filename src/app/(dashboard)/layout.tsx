@@ -16,6 +16,7 @@ import { ToastProvider } from '@/components/ui/toast';
 import { BrandLogo } from '@/components/brand-logo';
 import { InstallButton } from '@/components/pwa/install-button';
 import { DemoBanner } from '@/components/demo/demo-banner';
+import { FeedbackPopover } from '@/components/feedback/feedback-popover';
 
 const roleLabels: Record<string, string> = {
   admin: 'Administrador',
@@ -151,6 +152,7 @@ export default async function DashboardLayout({
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#0D9488,#0F766E)] text-xs font-semibold text-white shadow-[0_4px_10px_-3px_rgba(13,148,136,0.45)]">
               {getInitials(user.fullName)}
             </span>
+            <FeedbackPopover userEmail={user.email} />
             <InstallButton />
             <LogoutButton isDemo={isDemo} />
           </div>

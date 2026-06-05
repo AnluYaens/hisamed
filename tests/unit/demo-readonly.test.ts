@@ -33,6 +33,7 @@ import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { and, eq, inArray } from 'drizzle-orm';
+import { NextRequest } from 'next/server';
 
 import * as schema from '@/lib/db/schema';
 
@@ -282,6 +283,7 @@ const DEMO_ALLOWED = new Set([
   'searchPatients', // read-only query
   'registerClinic', // public sign-up — no session yet, creates a new clinic
   'submitAccessRequest', // public landing form — no session
+  'submitFeedback', // feedback email — demo visitors are explicitly allowed to send it
 ]);
 
 describe('Demo read-only — static guard coverage', () => {
@@ -462,7 +464,10 @@ describe('Demo read-only — runtime enforcement on every write action', () => {
 describe('/demo auto-login — only ever authenticates the demo user', () => {
   async function callDemo(url = 'http://localhost/demo') {
     const mod = await import('@/app/demo/route');
-    return mod.GET(new Request(url) as never);
+    // The route is typed `NextRequest` and reads `request.nextUrl` (for the
+    // ?lang param) as well as `request.url` (for redirect base URLs). A plain
+    // `Request` has no `.nextUrl`, so construct the real Next type here.
+    return mod.GET(new NextRequest(url));
   }
 
   itDb('happy path: mints a session for the exact demo user and redirects to /inicio', async () => {
