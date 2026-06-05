@@ -141,6 +141,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 
+    /* A stray element wider than the viewport makes iOS Safari treat the page
+       as zoomable and shift the zoom level (e.g. when the nav sheet slides in).
+       The sidebar is a fixed-position overlay so it never widens layout, but
+       this guards against any other horizontal bleed. */
+    overflow-x: hidden;
+
     /* Ambient backdrop — warm cream base washed with four soft color orbs
        (teal, sky, amber, pink). Fixed so panels float over a still field. */
     background-color: #ece7de;
@@ -410,6 +416,19 @@
     .glass-input {
       background: rgba(255, 255, 255, 0.95);
     }
+  }
+}
+
+/* iOS Safari auto-zooms when a focused field's font-size is below 16px. Several
+   inputs use sub-16px utilities (e.g. text-sm, text-[14.5px]); pin them to 16px
+   on mobile to stop the zoom-in. This rule is intentionally left OUTSIDE any
+   @layer so it overrides Tailwind's (layered) font-size utilities by cascade
+   precedence — no !important needed. Desktop sizes are untouched. */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
   }
 }
 

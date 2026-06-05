@@ -79,7 +79,8 @@ export function InstallButton() {
       title="Instalar Hisamed como aplicación"
     >
       <Download className="h-4 w-4" />
-      Instalar app
+      {/* Icon-only on mobile (where installing matters most); label on ≥sm. */}
+      <span className="hidden sm:inline">Instalar app</span>
     </Button>
   );
 }

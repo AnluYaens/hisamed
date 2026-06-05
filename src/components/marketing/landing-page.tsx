@@ -55,7 +55,7 @@ export function LandingPage({ initialLang }: { initialLang: Lang }) {
           <LangToggle lang={lang} onChange={switchLang} />
           <Link
             href="/login"
-            className="hidden text-sm font-semibold text-slate-600 transition-colors hover:text-slate-900 sm:inline"
+            className="text-sm font-semibold text-slate-600 transition-colors hover:text-slate-900"
           >
             {t.nav.login}
           </Link>

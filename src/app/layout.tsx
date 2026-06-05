@@ -31,6 +31,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // `cover` lets the app paint into the iOS safe-area (notch / home indicator).
+  // Deliberately no `maximumScale` / `userScalable` — pinch-zoom stays enabled
+  // for accessibility; iOS auto-zoom is prevented via 16px inputs in globals.css.
+  viewportFit: "cover",
   themeColor: "#0d9488", // teal-600 — matches the manifest theme_color
 };
 
