@@ -74,7 +74,17 @@ export const config = {
   // page, so they cannot be behind the auth redirect. The same applies to
   // `/.well-known/*` (e.g. security.txt) — public, well-known static resources
   // that scanners and humans fetch without credentials.
+  //
+  // The bare `icon` token (a prefix) intentionally exempts all brand-icon
+  // assets, which the login/marketing pages load without a session:
+  //   • `/icons/*`  — PWA manifest icons (public/icons/*)
+  //   • `/icon.png` — the BrandLogo mark (public/icon.png), rendered via
+  //                   next/image in every header
+  //   • `/icon`     — Next's metadata route for src/app/icon.png (served at
+  //                   `/icon?<hash>`, not `/icon.png`)
+  // `apple-icon` likewise exempts the `/apple-icon` metadata route for
+  // src/app/apple-icon.png. `favicon.ico` is already covered above.
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|sw.js|icons|\\.well-known).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|sw.js|icon|apple-icon|\\.well-known).*)',
   ],
 };
