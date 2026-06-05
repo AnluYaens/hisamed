@@ -37,6 +37,9 @@ export function LandingPage({ initialLang }: { initialLang: Lang }) {
   }, []);
 
   const legal = LEGAL_HREFS[lang];
+  // English visitors carry their language into the demo so the demo banner can
+  // surface a one-line note that the app itself is Spanish-only.
+  const demoHref = lang === 'en' ? '/demo?lang=en' : '/demo';
 
   return (
     <div className="min-h-screen bg-[radial-gradient(120%_120%_at_50%_0%,#f0fdfa_0%,#f8fafc_45%,#ffffff_100%)] text-slate-900">
@@ -65,7 +68,7 @@ export function LandingPage({ initialLang }: { initialLang: Lang }) {
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a
-              href="/demo"
+              href={demoHref}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[linear-gradient(180deg,#14B8A6,#0D9488)] px-6 text-sm font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.25)_inset,0_8px_18px_-5px_rgba(13,148,136,0.55)] transition-all hover:bg-[linear-gradient(180deg,#0D9488,#0F766E)] active:scale-[0.98]"
             >
               {t.hero.tryDemo}
@@ -140,7 +143,7 @@ export function LandingPage({ initialLang }: { initialLang: Lang }) {
               <h3 className="text-lg font-semibold text-slate-900">{t.cta.demo.title}</h3>
               <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">{t.cta.demo.body}</p>
               <a
-                href="/demo"
+                href={demoHref}
                 className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[linear-gradient(180deg,#14B8A6,#0D9488)] px-5 text-sm font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.25)_inset,0_6px_14px_-4px_rgba(13,148,136,0.5)] transition-all hover:bg-[linear-gradient(180deg,#0D9488,#0F766E)] active:scale-[0.98]"
               >
                 {t.cta.demo.button}

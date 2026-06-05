@@ -4,7 +4,8 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { generateAccessToken, generateRefreshToken } from '@/lib/auth/tokens';
 import { setAuthCookies } from '@/lib/auth/cookies';
-import { DEMO_CLINIC_ID, DEMO_USER_ID } from '@/lib/auth/demo';
+import { DEMO_CLINIC_ID, DEMO_USER_ID, DEMO_LANG_COOKIE } from '@/lib/auth/demo';
+import { isProd } from '@/lib/auth/cookies';
 import { absoluteUrl } from '@/lib/url';
 
 export const runtime = 'nodejs';
@@ -45,5 +46,21 @@ export async function GET(request: NextRequest) {
 
   const response = NextResponse.redirect(absoluteUrl('/inicio', request));
   setAuthCookies(response, { accessToken, refreshToken });
+
+  // Remember whether the visitor entered from the English landing so the demo
+  // banner can add a one-line note about the app being Spanish-only. Only 'en'
+  // is recorded; the default (Spanish) flow stays cookie-free and unchanged.
+  if (request.nextUrl.searchParams.get('lang') === 'en') {
+    response.cookies.set({
+      name: DEMO_LANG_COOKIE,
+      value: 'en',
+      httpOnly: true,
+      secure: isProd(),
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    });
+  }
+
   return response;
 }

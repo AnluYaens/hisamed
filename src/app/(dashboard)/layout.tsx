@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { eq } from 'drizzle-orm';
 import { Menu, AlertTriangle, Info, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { getSession } from '@/lib/auth/session';
-import { isDemoSession } from '@/lib/auth/demo';
+import { isDemoSession, DEMO_LANG_COOKIE } from '@/lib/auth/demo';
 import { getClinicSubscription } from '@/queries/clinic';
 import { LogoutButton } from '@/components/logout-button';
 import { SidebarNav } from '@/components/sidebar-nav';
@@ -92,6 +92,10 @@ export default async function DashboardLayout({
 
   const roleLabel = roleLabels[user.role] ?? user.role;
   const isDemo = isDemoSession(session);
+  // Visitors who entered the demo from the English landing get an English
+  // context note in the banner; everyone else keeps the Spanish banner as-is.
+  const demoLang =
+    isDemo && (await cookies()).get(DEMO_LANG_COOKIE)?.value === 'en' ? 'en' : 'es';
 
   return (
     // Two frosted panels float over the ambient body backdrop, separated by a
@@ -153,7 +157,7 @@ export default async function DashboardLayout({
         </header>
 
         {/* ── Demo banner ── */}
-        {isDemo && <DemoBanner />}
+        {isDemo && <DemoBanner lang={demoLang} />}
 
         {/* ── Trial banner ── */}
         {!isDemo && subscription.status === 'trialing' && !subscription.isTrialExpired && (

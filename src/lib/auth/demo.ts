@@ -28,6 +28,14 @@ export const DEMO_USER_ID =
 /** Login email for the demo doctor. */
 export const DEMO_USER_EMAIL = 'demo@hisamed.com';
 
+/**
+ * Cookie that records which landing-page language a demo visitor came from, so
+ * the demo banner can add an English context note for visitors who arrived from
+ * the English landing (/demo?lang=en). Only 'en' is ever stored; its absence
+ * means the default Spanish experience. Purely cosmetic — carries no auth.
+ */
+export const DEMO_LANG_COOKIE = 'demo_lang';
+
 /** Friendly message shown when a demo visitor attempts to write. */
 export const DEMO_READONLY_MESSAGE =
   'Esta cuenta es solo de demostración. Los cambios no se guardarán.';

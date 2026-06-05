@@ -8,7 +8,7 @@ import { Eye } from 'lucide-react';
 // the session) before landing on the public access section — the marketing
 // root redirects logged-in users straight to /inicio, so a demo visitor must
 // log out first to reach the request form.
-export function DemoBanner() {
+export function DemoBanner({ lang = 'es' }: { lang?: 'es' | 'en' }) {
   const [pending, startTransition] = useTransition();
 
   function solicitarAcceso() {
@@ -19,7 +19,7 @@ export function DemoBanner() {
         // Even if logout fails we still send them to the landing; worst case
         // the proxy bounces them back to /inicio and they can retry.
       }
-      window.location.href = '/?lang=es#acceso';
+      window.location.href = `/?lang=${lang}#acceso`;
     });
   }
 
@@ -28,7 +28,9 @@ export function DemoBanner() {
       <span className="flex items-center gap-2">
         <Eye className="h-4 w-4 shrink-0" />
         <span>
-          Estás viendo una cuenta de demostración. Los cambios no se guardarán.
+          {lang === 'en'
+            ? "Note: the app is in Spanish — Hisamed is built for Spanish-speaking doctors in Latin America. Demo data and changes won't be saved."
+            : 'Estás viendo una cuenta de demostración. Los cambios no se guardarán.'}
         </span>
       </span>
       <button
