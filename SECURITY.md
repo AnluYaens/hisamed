@@ -15,7 +15,7 @@ If you use a fork or pinned commit, you are responsible for merging security-rel
 
 **Please do not open a public issue** for security reports; that can expose users before a fix exists.
 
-We accept private reports through **GitHub**: [open a private vulnerability report](https://github.com/Atriqon/ehr-core/security/advisories/new) for this repository. If that option is not available, use **Security → Report a vulnerability** from the repository menu, or contact a maintainer privately.
+We accept private reports through **GitHub**: [open a private vulnerability report](https://github.com/AnluYaens/hisamed/security/advisories/new) for this repository. If that option is not available, use **Security → Report a vulnerability** from the repository menu, or contact a maintainer privately.
 
 In your report, include where possible:
 

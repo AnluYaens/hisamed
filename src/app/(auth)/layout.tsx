@@ -24,7 +24,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
         <footer className="mt-8 text-center text-xs text-slate-400">
-          © 2026 Hisamed · Powered by Atriqon
+          © 2026 Hisamed · Operated by Angel Jaen
         </footer>
       </div>
 
