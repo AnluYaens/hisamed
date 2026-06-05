@@ -30,12 +30,6 @@ export default async function LoginPage() {
         </p>
       </div>
       <LoginForm />
-      <p className="mt-6 text-center text-[13px] text-slate-500">
-        ¿No tienes cuenta?{' '}
-        <Link href="/registro" className="font-semibold text-teal-700 hover:underline">
-          Regístrate gratis
-        </Link>
-      </p>
     </div>
   );
 }

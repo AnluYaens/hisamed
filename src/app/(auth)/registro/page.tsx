@@ -1,26 +1,14 @@
 import { redirect } from 'next/navigation';
-import { getSession } from '@/lib/auth/session';
-import { RegisterForm } from '@/components/register-form';
 
-export const metadata = {
-  title: 'Crear cuenta · Hisamed',
-};
-
-export default async function RegistroPage() {
-  const session = await getSession();
-  if (session) redirect('/');
-
-  return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-7 shadow-sm sm:p-8">
-      <div className="mb-6 space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight text-zinc-900">
-          Crea tu cuenta
-        </h2>
-        <p className="text-sm text-zinc-500">
-          Empieza a usar Hisamed en tu consulta — 7 días de prueba, sin tarjeta de crédito.
-        </p>
-      </div>
-      <RegisterForm />
-    </div>
-  );
+// Self-service registration is disabled during the invite-only pilot. All
+// acquisition is funneled through the landing page's "Solicitar acceso" form,
+// which emails the operator. This route therefore redirects to the landing
+// page; the `from=register` hint lets the landing surface the access-request
+// form to anyone who arrives here from an old link.
+//
+// The underlying registration logic (server action, validators, DB code) is
+// intentionally left in place — it will be re-enabled when self-service
+// launches with Stripe. Only this route is made inaccessible.
+export default function RegistroPage() {
+  redirect('/?from=register');
 }
