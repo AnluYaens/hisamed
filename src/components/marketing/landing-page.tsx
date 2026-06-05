@@ -142,7 +142,15 @@ export function LandingPage({ initialLang }: { initialLang: Lang }) {
             {/* Demo card */}
             <div className="flex flex-col rounded-2xl border border-slate-900/5 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
               <h3 className="text-lg font-semibold text-slate-900">{t.cta.demo.title}</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">{t.cta.demo.body}</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{t.cta.demo.body}</p>
+              <div className="mt-4 flex-1 text-sm leading-relaxed text-slate-600">
+                <p>{t.cta.demo.seeHeading}</p>
+                <ul className="mt-1 space-y-1">
+                  {t.cta.demo.seeItems.map((item) => (
+                    <li key={item}>· {item}</li>
+                  ))}
+                </ul>
+              </div>
               <a
                 href={demoHref}
                 className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[linear-gradient(180deg,#14B8A6,#0D9488)] px-5 text-sm font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.25)_inset,0_6px_14px_-4px_rgba(13,148,136,0.5)] transition-all hover:bg-[linear-gradient(180deg,#0D9488,#0F766E)] active:scale-[0.98]"

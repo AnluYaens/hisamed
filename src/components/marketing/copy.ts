@@ -27,7 +27,7 @@ export interface LandingCopy {
   how: { heading: string; steps: Step[] };
   cta: {
     heading: string;
-    demo: { title: string; body: string; button: string };
+    demo: { title: string; body: string; seeHeading: string; seeItems: string[]; button: string };
     access: {
       title: string;
       body: string;
@@ -111,6 +111,12 @@ export const COPY: Record<Lang, LandingCopy> = {
       demo: {
         title: 'Probar demo',
         body: 'Explora una cuenta de demostración con datos de ejemplo. Es solo de lectura: puedes navegar libremente, los cambios no se guardan.',
+        seeHeading: 'Verás:',
+        seeItems: [
+          '6 pacientes ficticios con historias completas',
+          'Agenda con citas de la semana',
+          'Notas clínicas y signos vitales de ejemplo',
+        ],
         button: 'Entrar a la demo',
       },
       access: {
@@ -194,6 +200,12 @@ export const COPY: Record<Lang, LandingCopy> = {
       demo: {
         title: 'Try the demo',
         body: 'Explore a demo account with sample data. It is read-only: browse freely, changes are not saved.',
+        seeHeading: "You'll see:",
+        seeItems: [
+          '6 fictional patients with complete records',
+          'A weekly agenda with appointments',
+          'Sample clinical notes and vital signs',
+        ],
         button: 'Enter the demo',
       },
       access: {
