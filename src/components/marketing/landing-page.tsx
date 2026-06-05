@@ -19,6 +19,10 @@ import { COPY, type Lang } from '@/components/marketing/copy';
 
 const FEATURE_ICONS = [FileText, Smartphone, ShieldCheck, Globe] as const;
 
+// Icons for the demo card's "what's inside" mini-cards, matched positionally
+// to t.cta.demo.chips: patients, weekly agenda, clinical notes.
+const DEMO_CHIP_ICONS = [Users, CalendarDays, FileText] as const;
+
 const LEGAL_HREFS: Record<Lang, { terms: string; privacy: string; dpa: string }> = {
   es: { terms: '/terminos', privacy: '/privacidad', dpa: '/dpa' },
   en: { terms: '/terms', privacy: '/privacy', dpa: '/dpa-en' },
@@ -143,14 +147,28 @@ export function LandingPage({ initialLang }: { initialLang: Lang }) {
             <div className="flex flex-col rounded-2xl border border-slate-900/5 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
               <h3 className="text-lg font-semibold text-slate-900">{t.cta.demo.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">{t.cta.demo.body}</p>
-              <div className="mt-4 flex-1 text-sm leading-relaxed text-slate-600">
-                <p>{t.cta.demo.seeHeading}</p>
-                <ul className="mt-1 space-y-1">
-                  {t.cta.demo.seeItems.map((item) => (
-                    <li key={item}>· {item}</li>
-                  ))}
-                </ul>
+
+              {/* What's in the demo — subtle supporting mini-cards. */}
+              <div className="mt-5 grid grid-cols-3 gap-2">
+                {t.cta.demo.chips.map((label, i) => {
+                  const Icon = DEMO_CHIP_ICONS[i];
+                  return (
+                    <div
+                      key={label}
+                      className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-900/5 bg-slate-50/60 px-2 py-3 text-center"
+                    >
+                      <Icon className="h-4 w-4 text-teal-600" />
+                      <span className="text-[11px] font-medium leading-tight text-slate-500">{label}</span>
+                    </div>
+                  );
+                })}
               </div>
+
+              {/* Abstract, glassy dashboard hint — same visual language as the
+                  hero mockup, scaled down so it stays decorative. */}
+              <DemoMockup />
+
+              <div className="flex-1" />
               <a
                 href={demoHref}
                 className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[linear-gradient(180deg,#14B8A6,#0D9488)] px-5 text-sm font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.25)_inset,0_6px_14px_-4px_rgba(13,148,136,0.5)] transition-all hover:bg-[linear-gradient(180deg,#0D9488,#0F766E)] active:scale-[0.98]"
@@ -280,6 +298,45 @@ function HeroMockup({ caption }: { caption: string }) {
         </div>
       </div>
       <p className="mt-3 text-center text-xs text-slate-400">{caption}</p>
+    </div>
+  );
+}
+
+// A scaled-down, decorative cousin of HeroMockup: same frosted panel + teal
+// accents, but stripped to an abstract list/cards hint of the dashboard so it
+// supports the demo CTA without competing with it.
+function DemoMockup() {
+  return (
+    <div className="mt-5 rounded-2xl border border-slate-900/5 bg-white/80 p-2 shadow-[0_18px_36px_-18px_rgba(15,23,42,0.22)] backdrop-blur">
+      <div className="overflow-hidden rounded-xl border border-slate-900/5 bg-slate-50">
+        {/* Top bar */}
+        <div className="flex h-6 items-center gap-1.5 border-b border-slate-900/5 bg-white px-3">
+          <span className="h-1.5 w-1.5 rounded-full bg-slate-200" />
+          <span className="h-1.5 w-1.5 rounded-full bg-slate-200" />
+          <span className="h-1.5 w-1.5 rounded-full bg-slate-200" />
+        </div>
+        <div className="space-y-2 p-3">
+          {/* Stat cards */}
+          <div className="grid grid-cols-3 gap-2">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="rounded-lg border border-slate-900/5 bg-white p-2">
+                <div className="h-1.5 w-6 rounded bg-teal-200" />
+                <div className="mt-1.5 h-3 w-8 rounded bg-slate-200" />
+              </div>
+            ))}
+          </div>
+          {/* List rows */}
+          <div className="space-y-1.5 rounded-lg border border-slate-900/5 bg-white p-2.5">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-[linear-gradient(135deg,#14B8A6,#0F766E)]" />
+                <span className="h-1.5 flex-1 rounded bg-slate-100" />
+                <span className="h-1.5 w-8 rounded bg-slate-100" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
