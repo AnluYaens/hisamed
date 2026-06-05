@@ -3,16 +3,15 @@
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { requestLogout, logoutDestination } from '@/lib/auth/logout-client';
 
 export function LogoutButton({ isDemo = false }: { isDemo?: boolean }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   async function onClick() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    // Demo visitors arrived from the public landing page, so send them back
-    // there on logout. Real users keep returning to the login screen.
-    const destination = isDemo ? '/' : '/login';
+    await requestLogout();
+    const destination = logoutDestination(isDemo);
     startTransition(() => {
       router.replace(destination);
       router.refresh();

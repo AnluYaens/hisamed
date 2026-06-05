@@ -130,7 +130,7 @@ export default async function DashboardLayout({
         {/* ── Top header — translucent bar ── */}
         <header className="glass-header flex h-16 shrink-0 items-center gap-3 border-b border-slate-900/6 px-4 lg:px-6">
           {/* Mobile hamburger */}
-          <MobileSidebar role={user.role}>
+          <MobileSidebar role={user.role} isDemo={isDemo}>
             <button
               type="button"
               className="inline-flex items-center justify-center rounded-full p-2 text-zinc-500 transition-colors duration-150 hover:bg-slate-900/6 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/40 lg:hidden"
@@ -154,7 +154,11 @@ export default async function DashboardLayout({
             </span>
             <FeedbackPopover userEmail={user.email} />
             <InstallButton />
-            <LogoutButton isDemo={isDemo} />
+            {/* Logout moves to the mobile sidebar (< sm) to free top-bar space;
+                stays here on ≥sm. Desktop layout unchanged. */}
+            <span className="hidden sm:inline-flex">
+              <LogoutButton isDemo={isDemo} />
+            </span>
           </div>
         </header>
 
