@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Dialog } from '@base-ui/react/dialog';
 import { Download, Share, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { isIosSafari } from '@/lib/pwa/install';
@@ -97,9 +98,7 @@ export function InstallButton() {
           {/* Icon-only on mobile (where installing matters most); label on ≥sm. */}
           <span className="hidden sm:inline">Instalar app</span>
         </Button>
-        {showIosModal && (
-          <IosInstallModal onClose={() => setShowIosModal(false)} />
-        )}
+        <IosInstallModal open={showIosModal} onOpenChange={setShowIosModal} />
       </>
     );
   }
@@ -149,65 +148,64 @@ const IOS_STEPS = [
   },
 ] as const;
 
-function IosInstallModal({ onClose }: { onClose: () => void }) {
+function IosInstallModal({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="ios-install-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-    >
-      {/* Backdrop */}
-      <button
-        type="button"
-        aria-label="Cerrar"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-      />
-
-      {/* Card */}
-      <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-        <button
-          type="button"
-          aria-label="Cerrar"
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-900/5 hover:text-slate-700"
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      {/* Portaled to <body>, so the modal escapes the `backdrop-filter` on the
+          dashboard's .glass-header/.glass-panel ancestors. Those filters
+          establish a containing block for `position: fixed`, which would
+          otherwise anchor the modal to the header strip instead of the
+          viewport. */}
+      <Dialog.Portal>
+        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-sm" />
+        <Dialog.Popup
+          className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto rounded-2xl bg-white p-6 shadow-xl outline-none transition duration-150 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0"
         >
-          <X className="h-4 w-4" />
-        </button>
+          <button
+            type="button"
+            aria-label="Cerrar"
+            onClick={() => onOpenChange(false)}
+            className="absolute right-4 top-4 rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-900/5 hover:text-slate-700"
+          >
+            <X className="h-4 w-4" />
+          </button>
 
-        <h2
-          id="ios-install-title"
-          className="text-base font-semibold text-slate-900"
-        >
-          Instalar Hisamed
-        </h2>
+          <Dialog.Title className="text-base font-semibold text-slate-900">
+            Instalar Hisamed
+          </Dialog.Title>
 
-        <ol className="mt-4 space-y-3">
-          {IOS_STEPS.map((step, i) => {
-            const Icon = step.icon;
-            return (
-              <li key={i} className="flex items-start gap-3 text-[13.5px] text-slate-600">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600/10 text-[11px] font-semibold text-teal-700">
-                  {i + 1}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  {step.text}
-                  {Icon && <Icon className="inline h-4 w-4 shrink-0 text-slate-400" />}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
+          <ol className="mt-4 space-y-3">
+            {IOS_STEPS.map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <li key={i} className="flex items-start gap-3 text-[13.5px] text-slate-600">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600/10 text-[11px] font-semibold text-teal-700">
+                    {i + 1}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    {step.text}
+                    {Icon && <Icon className="inline h-4 w-4 shrink-0 text-slate-400" />}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
 
-        <Button
-          type="button"
-          onClick={onClose}
-          className="mt-6 w-full"
-        >
-          Entendido
-        </Button>
-      </div>
-    </div>
+          <Button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="mt-6 w-full"
+          >
+            Entendido
+          </Button>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
