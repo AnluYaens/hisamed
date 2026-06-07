@@ -74,7 +74,7 @@ pnpm dev                    # http://localhost:3000
 
 ## Testing
 
-All tests run against a real Postgres database — there are no mocked queries, because the isolation guarantees can only be proven against real SQL. The suite is **325 unit and integration tests** (Vitest), plus end-to-end coverage of the core flows with Playwright. Database-dependent suites self-skip when no Postgres instance is reachable.
+All tests run against a real Postgres database — there are no mocked queries, because the isolation guarantees can only be proven against real SQL. The suite is **336 unit and integration tests** (Vitest), plus end-to-end coverage of the core flows with Playwright. Database-dependent suites self-skip when no Postgres instance is reachable.
 
 ```bash
 pnpm test          # unit + integration (Vitest)
@@ -89,4 +89,4 @@ There is no public contribution or fork policy. No permission is granted to use,
 
 Hisamed is operated by Angel Jaen, an independent developer based in Germany.
 
-Contact: [legal@hisamed.com](mailto:legal@hisamed.com).
+Contact: [soporte@hisamed.com](mailto:soporte@hisamed.com) (general) · [legal@hisamed.com](mailto:legal@hisamed.com) (licensing inquiries).
