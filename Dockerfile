@@ -38,6 +38,12 @@ COPY --from=build /app/.next/static ./.next/static
 # standalone trace does not pick them up, so copy them explicitly.
 COPY --from=build /app/legal ./legal
 
+# Next.js image optimization writes its cache to .next/cache at runtime. The
+# files copied above are owned by root, so create the dir and hand it to the
+# unprivileged runtime user before dropping privileges — otherwise every
+# optimized image request logs EACCES on mkdir.
+RUN mkdir -p /app/.next/cache && chown -R node:node /app/.next/cache
+
 USER node
 
 EXPOSE 3000

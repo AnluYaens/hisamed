@@ -36,6 +36,13 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  experimental: {
+    // iPhone photos are typically 3-5MB; the default 1mb Server Actions body
+    // cap rejects them with a 413 before the upload action ever runs.
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
   // pdfkit reads its bundled AFM font files from disk at runtime. Bundling it
   // through webpack/turbopack breaks the lookup, so it must run as an external
   // CJS package inside the Node.js runtime where the route handlers execute.
