@@ -26,8 +26,15 @@ export async function readLegalDoc(
 
 /** Strip HTML comments (top-of-file draft / lawyer-review notes). */
 function stripComments(markdown: string): string {
-  return markdown.replace(/<!--[\s\S]*?-->/g, '');
+  let previous: string;
+  let current = markdown;
+  do {
+    previous = current;
+    current = current.replace(/<!--[\s\S]*?-->/g, '');
+  } while (current !== previous);
+  return current;
 }
+
 
 /** Render inline `**bold**`, `*italic*`, and `` `code` `` to React nodes. */
 function renderInline(text: string, keyPrefix: string): ReactNode[] {
