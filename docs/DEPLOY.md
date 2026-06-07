@@ -73,7 +73,7 @@ STORAGE_PROVIDER=r2
 R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
 R2_ACCESS_KEY_ID=<r2-access-key>
 R2_SECRET_ACCESS_KEY=<r2-secret-key>
-R2_BUCKET=ehr-core-attachments
+R2_BUCKET=clinica-attachments
 R2_REGION=auto
 ```
 
