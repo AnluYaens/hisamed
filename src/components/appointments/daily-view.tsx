@@ -24,12 +24,15 @@ const DOT_COLOR: Record<AppointmentStatus, string> = {
 };
 
 function formatDateHeader(date: Date): string {
-  return date.toLocaleDateString('es-VE', {
+  // es-VE renders dates fully lowercase; capitalize only the first letter.
+  // (A CSS `capitalize` would wrongly uppercase "De Junio De".)
+  const label = date.toLocaleDateString('es-VE', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 export function DailyView({
@@ -49,7 +52,7 @@ export function DailyView({
             ? 'No tienes citas programadas para hoy'
             : 'Sin citas para este día'}
         </p>
-        <p className="mt-1 max-w-80 text-[13px] capitalize leading-relaxed text-slate-500">
+        <p className="mt-1 max-w-80 text-[13px] leading-relaxed text-slate-500">
           {isToday
             ? 'Las próximas citas aparecerán aquí cuando sean registradas.'
             : formatDateHeader(date)}
@@ -60,7 +63,7 @@ export function DailyView({
 
   return (
     <div className="space-y-4">
-      <p className="text-[13px] font-medium capitalize text-slate-500">
+      <p className="text-[13px] font-medium text-slate-500">
         {formatDateHeader(date)} · {appointments.length} cita
         {appointments.length !== 1 ? 's' : ''}
       </p>

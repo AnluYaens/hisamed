@@ -288,7 +288,7 @@ export function CsvImporter() {
             <h3 className="mb-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">
               Mapeo de columnas
             </h3>
-            <div className="glass-surface overflow-hidden rounded-[16px]">
+            <div className="glass-surface overflow-x-auto rounded-[16px]">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-900/6 bg-slate-50/60">

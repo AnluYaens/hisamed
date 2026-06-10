@@ -109,20 +109,24 @@ export default async function DashboardPage() {
     },
   ];
 
-  const dateLabel = new Intl.DateTimeFormat('es-VE', {
+  // es-VE renders the date fully lowercase ("miércoles, 10 de junio de 2026").
+  // Capitalize only the first letter — a CSS `capitalize` would wrongly
+  // uppercase the prepositions ("Miércoles, 10 De Junio De 2026").
+  const rawDateLabel = new Intl.DateTimeFormat('es-VE', {
     dateStyle: 'full',
     timeZone: timezone,
   }).format(new Date());
+  const dateLabel = rawDateLabel.charAt(0).toUpperCase() + rawDateLabel.slice(1);
 
   return (
-    <div className="fade-in p-6 sm:p-8 lg:px-10">
+    <div className="fade-in p-4 sm:p-8 lg:px-10">
       {/* Branded greeting header — the only solid-color card in the app. */}
-      <div className="greeting-card mb-6 rounded-[22px] px-8 py-7 sm:px-9">
-        <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.025em] text-white">
+      <div className="greeting-card mb-6 rounded-[22px] px-5 py-5 sm:px-9 sm:py-7">
+        <h1 className="break-words text-2xl font-semibold leading-[1.15] tracking-[-0.025em] text-white sm:text-[28px] md:text-[32px]">
           {getGreeting(timezone)}
           {displayName ? `, ${displayName}` : ''}
         </h1>
-        <p className="mt-1.5 text-sm capitalize text-teal-50/85">{dateLabel}</p>
+        <p className="mt-1.5 text-sm text-teal-50/85">{dateLabel}</p>
       </div>
 
       {/* Onboarding nudge: solo doctor signed up as admin but never created
@@ -165,7 +169,7 @@ export default async function DashboardPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[13px] font-medium text-slate-500">{label}</p>
-                <p className="mt-2 text-[38px] font-bold leading-none tabular-nums tracking-[-0.03em] text-slate-900">
+                <p className="mt-2 text-[32px] font-bold leading-none tabular-nums tracking-[-0.03em] text-slate-900 sm:text-[38px]">
                   {value}
                 </p>
               </div>
@@ -197,7 +201,7 @@ export default async function DashboardPage() {
                       {nextAppointment.patient.lastName[0]}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-base font-semibold tracking-[-0.01em] text-slate-900">
+                      <p className="break-words text-base font-semibold tracking-[-0.01em] text-slate-900">
                         {nextAppointment.patient.firstName}{' '}
                         {nextAppointment.patient.lastName}
                       </p>

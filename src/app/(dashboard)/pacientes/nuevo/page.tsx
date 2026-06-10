@@ -15,12 +15,12 @@ export default async function NuevoPacientePage() {
   const todayStr = todayInTz(timezone);
 
   return (
-    <div className="mx-auto max-w-2xl p-6 lg:p-8">
+    <div className="mx-auto max-w-2xl p-4 sm:p-6 lg:p-8">
       <Breadcrumbs
         items={[patientsRootCrumb(), { label: 'Nuevo paciente' }]}
       />
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6 dark:border-zinc-700 dark:bg-zinc-900">
         <h1 className="mb-1 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
           Registrar nuevo paciente
         </h1>

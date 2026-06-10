@@ -144,14 +144,14 @@ export function PatientForm({
 
       {/* Tabs */}
       <div className="border-b border-zinc-200 dark:border-zinc-700">
-        <nav className="-mb-px flex gap-1">
+        <nav className="-mb-px flex gap-1 overflow-x-auto">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
               className={[
-                'px-4 py-2.5 text-sm font-medium transition-colors',
+                'shrink-0 whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-colors sm:px-4',
                 activeTab === tab.id
                   ? 'border-b-2 border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-400'
                   : 'border-b-2 border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200',

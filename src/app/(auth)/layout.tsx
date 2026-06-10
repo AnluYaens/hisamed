@@ -5,15 +5,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     // Two panels float over the ambient body backdrop: a frosted form card on
     // the left, the solid teal→slate brand panel on the right.
-    <div className="fade-in flex min-h-full flex-1 items-stretch p-6">
+    // min-h-dvh (not 100vh/100%) so small Android viewports size against the
+    // *visible* area even as the browser chrome collapses/expands; the page
+    // scrolls instead of clipping the form when it doesn't fit.
+    <div className="fade-in flex min-h-dvh flex-1 items-stretch p-3 sm:p-6">
       {/* ── Form side — frosted glass ── */}
-      <div className="glass-card flex w-full flex-col rounded-[28px] px-6 py-10 sm:px-12 lg:w-1/2 lg:rounded-r-none lg:px-16">
+      <div className="glass-card flex w-full flex-col rounded-[28px] px-5 py-6 sm:px-12 sm:py-10 lg:w-1/2 lg:rounded-r-none lg:px-16">
         <div className="flex flex-1 flex-col items-center justify-center">
           <div className="w-full max-w-sm">
             {/* Logo + product name, centered above the form */}
-            <div className="mb-8 flex flex-col items-center text-center">
+            <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
               <BrandLogo size="lg" iconOnly />
-              <h1 className="mt-4 text-[32px] font-semibold tracking-[-0.025em] text-slate-900">
+              <h1 className="mt-4 text-[26px] font-semibold tracking-[-0.025em] text-slate-900 sm:text-[32px]">
                 Hisamed
               </h1>
               <p className="mt-1 text-sm text-slate-500">
@@ -23,7 +26,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             {children}
           </div>
         </div>
-        <footer className="mt-8 text-center text-xs text-slate-400">
+        <footer className="mt-6 text-center text-xs text-slate-400 sm:mt-8">
           © 2026 Hisamed · Operated by Angel Jaen
         </footer>
       </div>

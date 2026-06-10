@@ -13,7 +13,7 @@ export default async function LoginPage() {
   if (session) redirect('/inicio');
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-7 shadow-sm sm:p-8">
+    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8">
       <Link
         href="/"
         className="mb-5 inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-500 transition-colors hover:text-teal-700"
