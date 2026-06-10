@@ -17,7 +17,7 @@ export async function NewAppointmentPageWrapper() {
   const todayStr = todayInTz(timezone);
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <Breadcrumbs
         items={[
           { label: 'Agenda', href: '/agenda' },

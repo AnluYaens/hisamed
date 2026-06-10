@@ -34,12 +34,16 @@ function formatWeekRange(weekStart: Date): string {
 }
 
 function formatDayTitle(date: Date): string {
-  return date.toLocaleDateString('es-VE', {
+  // es-VE renders dates fully lowercase ("miércoles, 10 de junio de 2026").
+  // Capitalize only the first letter — a CSS `capitalize` would wrongly
+  // uppercase every word ("Miércoles, 10 De Junio De 2026").
+  const label = date.toLocaleDateString('es-VE', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
     year: 'numeric',
   });
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 export default async function AgendaPage({ searchParams }: PageProps) {
@@ -75,14 +79,14 @@ export default async function AgendaPage({ searchParams }: PageProps) {
     : formatDayTitle(activeDate);
 
   return (
-    <div className="fade-in p-6 sm:p-8 lg:px-10">
+    <div className="fade-in p-4 sm:p-8 lg:px-10">
       {/* Page header */}
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.025em] text-slate-900">
+          <h1 className="text-2xl font-semibold leading-[1.15] tracking-[-0.025em] text-slate-900 sm:text-[28px] md:text-[32px]">
             Agenda
           </h1>
-          <p className="mt-1 text-sm capitalize text-slate-500">{title}</p>
+          <p className="mt-1 text-sm text-slate-500">{title}</p>
         </div>
         <AppointmentFormDrawer
           doctors={doctors}

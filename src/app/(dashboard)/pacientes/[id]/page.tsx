@@ -168,7 +168,7 @@ export default async function PatientDetailPage({ params }: PageProps) {
   const allergiesBanner = allergies?.trim() || null;
 
   return (
-    <div className="fade-in p-6 sm:p-8 lg:px-10">
+    <div className="fade-in p-4 sm:p-8 lg:px-10">
       {/* Allergy banner — kept prominent, frosted danger alert. */}
       {allergiesBanner && (
         <div className="mb-4 flex items-start gap-3 rounded-2xl border border-red-600/20 bg-red-100/80 px-4 py-3.5 text-[13.5px] font-medium text-red-700 backdrop-blur-md">
@@ -183,28 +183,28 @@ export default async function PatientDetailPage({ params }: PageProps) {
       <Breadcrumbs items={patientTrail(patient)} />
 
       {/* Patient header */}
-      <div className="glass-card mb-6 rounded-[22px] p-6">
+      <div className="glass-card mb-6 rounded-[22px] p-4 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-4">
-          <div className="flex flex-col items-center gap-1.5">
+        <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+          <div className="flex shrink-0 flex-col items-center gap-1.5">
             <PatientAvatar
               patientId={patient.id}
               firstName={patient.firstName}
               lastName={patient.lastName}
               avatarStorageKey={patient.avatarStorageKey}
-              className="h-22 w-22 rounded-3xl shadow-[inset_0_0_0_1px_rgba(13,148,136,0.18),0_8px_20px_-8px_rgba(13,148,136,0.35)]"
-              textClassName="text-2xl"
+              className="h-16 w-16 rounded-3xl shadow-[inset_0_0_0_1px_rgba(13,148,136,0.18),0_8px_20px_-8px_rgba(13,148,136,0.35)] sm:h-22 sm:w-22"
+              textClassName="text-xl sm:text-2xl"
             />
             {canEditPatient && <PatientAvatarUploader patientId={patient.id} />}
             {canEditPatient && patient.avatarStorageKey && (
               <PatientAvatarRemoveButton patientId={patient.id} />
             )}
           </div>
-          <div>
-            <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.025em] text-slate-900">
+          <div className="min-w-0">
+            <h1 className="break-words text-xl font-semibold leading-tight tracking-[-0.025em] text-slate-900 sm:text-2xl md:text-[28px]">
               {patient.firstName} {patient.lastName}
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 break-words text-sm text-slate-500">
               {patientAge} años · {patient.idType === 'cedula' ? 'C.I. ' : ''}
               {patient.idNumber} · {patient.phone?.trim() || 'Sin teléfono'}
             </p>

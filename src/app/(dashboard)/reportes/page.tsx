@@ -158,7 +158,7 @@ function BarList({
       <div className="flex flex-col gap-2.5">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center gap-3">
-            <span className="w-44 shrink-0 truncate text-xs text-slate-600">
+            <span className="w-28 shrink-0 truncate text-xs text-slate-600 sm:w-44">
               {r.label}
             </span>
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-900/6">
@@ -218,10 +218,10 @@ export default async function ReportesPage({ searchParams }: PageProps) {
     report;
 
   return (
-    <div className="fade-in p-6 sm:p-8 lg:px-10">
+    <div className="fade-in p-4 sm:p-8 lg:px-10">
       <Breadcrumbs items={[{ label: 'Reportes' }]} />
       <div className="mb-6">
-        <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.025em] text-slate-900">
+        <h1 className="text-2xl font-semibold leading-[1.15] tracking-[-0.025em] text-slate-900 sm:text-[28px] md:text-[32px]">
           Reportes
         </h1>
         <p className="mt-1 text-sm text-slate-500">
@@ -417,6 +417,7 @@ export default async function ReportesPage({ searchParams }: PageProps) {
                     No hay datos para este período.
                   </p>
                 ) : (
+                  <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <tbody className="divide-y divide-slate-900/4">
                       {recentExports.map((row) => (
@@ -443,6 +444,7 @@ export default async function ReportesPage({ searchParams }: PageProps) {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 )}
               </div>
 
@@ -458,6 +460,7 @@ export default async function ReportesPage({ searchParams }: PageProps) {
                     No hay datos para este período.
                   </p>
                 ) : (
+                  <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <tbody className="divide-y divide-slate-900/4">
                       {recentActivity.map((row) => (
@@ -478,6 +481,7 @@ export default async function ReportesPage({ searchParams }: PageProps) {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 )}
               </div>
             </div>

@@ -32,8 +32,8 @@ export default async function ConfiguracionPage() {
   if (!session) redirect('/login');
   if (session.role !== 'admin' && session.role !== 'doctor') {
     return (
-      <div className="fade-in p-6 sm:p-8 lg:px-10">
-        <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.025em] text-slate-900">
+      <div className="fade-in p-4 sm:p-8 lg:px-10">
+        <h1 className="text-2xl font-semibold leading-[1.15] tracking-[-0.025em] text-slate-900 sm:text-[28px] md:text-[32px]">
           Configuración
         </h1>
         <p className="mt-4 text-sm text-slate-500">
@@ -47,8 +47,8 @@ export default async function ConfiguracionPage() {
   if (!clinic) redirect('/login');
 
   return (
-    <div className="fade-in p-6 sm:p-8 lg:px-10">
-      <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.025em] text-slate-900">
+    <div className="fade-in p-4 sm:p-8 lg:px-10">
+      <h1 className="text-2xl font-semibold leading-[1.15] tracking-[-0.025em] text-slate-900 sm:text-[28px] md:text-[32px]">
         Configuración
       </h1>
       <p className="mt-1 text-sm text-slate-500">Ajustes del sistema</p>

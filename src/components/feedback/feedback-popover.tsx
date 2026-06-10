@@ -55,7 +55,7 @@ export function FeedbackPopover({ userEmail }: { userEmail: string }) {
           </button>
         }
       />
-      <PopoverContent align="end" sideOffset={8} className="w-80 p-4">
+      <PopoverContent align="end" sideOffset={8} className="w-80 max-w-[calc(100vw-1.5rem)] p-4">
         <FeedbackPanel key={instance} userEmail={userEmail} onDone={() => setOpen(false)} />
       </PopoverContent>
     </Popover>

@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 // appointment list so the layout stays stable while data loads.
 export default function AgendaLoading() {
   return (
-    <div className="fade-in p-6 sm:p-8 lg:px-10">
+    <div className="fade-in p-4 sm:p-8 lg:px-10">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Skeleton className="h-9 w-40" />

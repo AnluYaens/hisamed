@@ -18,11 +18,11 @@ export default async function UsuariosPage() {
   ]);
 
   return (
-    <div className="fade-in p-6 sm:p-8 lg:px-10">
+    <div className="fade-in p-4 sm:p-8 lg:px-10">
       <Breadcrumbs items={settingsTrail({ label: 'Usuarios' })} />
 
       <div className="mb-6">
-        <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.025em] text-slate-900">
+        <h1 className="text-2xl font-semibold leading-[1.15] tracking-[-0.025em] text-slate-900 sm:text-[28px] md:text-[32px]">
           Gestión de usuarios
         </h1>
         <p className="mt-1 text-sm text-slate-500">

@@ -88,8 +88,10 @@ export function PatientTabs({
 
   return (
     <div className="space-y-5">
-      {/* Tab nav — iOS-style segmented control */}
-      <div className="flex items-center justify-between gap-3">
+      {/* Tab nav — iOS-style segmented control. On mobile the strip takes the
+          full row so it can scroll horizontally without the edit button in the
+          way; the button drops to its own row below. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <nav className="segmented max-w-full overflow-x-auto">
           {visibleTabs.map((tab) => {
             const Icon = tab.icon;
@@ -122,6 +124,7 @@ export function PatientTabs({
             type="button"
             variant={editing ? 'ghost' : 'outline'}
             size="sm"
+            className="self-end sm:self-auto"
             onClick={() => setEditing((e) => !e)}
           >
             {editing ? (

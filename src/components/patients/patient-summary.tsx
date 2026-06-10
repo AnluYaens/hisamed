@@ -149,9 +149,9 @@ function DataRow({
   return (
     <div className="flex justify-between gap-2 text-sm">
       <dt className="shrink-0 text-zinc-500 dark:text-zinc-400">{label}</dt>
-      <dd className="flex items-center gap-1 text-right font-medium text-zinc-800 dark:text-zinc-200">
+      <dd className="flex min-w-0 items-center gap-1 text-right font-medium text-zinc-800 dark:text-zinc-200">
         {icon}
-        {value}
+        <span className="min-w-0 break-words">{value}</span>
       </dd>
     </div>
   );

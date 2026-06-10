@@ -50,7 +50,7 @@ export default async function NewClinicalNotePage({ params, searchParams }: Page
   const appointmentId = typeof rawAppt === 'string' ? rawAppt : null;
 
   return (
-    <div className="fade-in p-6 sm:p-8 lg:px-10">
+    <div className="fade-in p-4 sm:p-8 lg:px-10">
       {allergies && (
         <div className="mb-4 flex items-start gap-3 rounded-2xl border border-red-600/20 bg-red-100/80 px-4 py-3.5 text-[13.5px] font-medium text-red-700 backdrop-blur-md">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
@@ -71,7 +71,7 @@ export default async function NewClinicalNotePage({ params, searchParams }: Page
         <p className="text-xs font-semibold uppercase tracking-[0.06em] text-slate-400">
           {patient.firstName} {patient.lastName}
         </p>
-        <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-[-0.025em] text-slate-900">
+        <h1 className="mt-1 text-2xl font-semibold leading-tight tracking-[-0.025em] text-slate-900 md:text-[28px]">
           Nueva nota de evolución
         </h1>
       </div>

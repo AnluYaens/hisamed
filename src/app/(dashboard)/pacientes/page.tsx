@@ -30,11 +30,11 @@ export default async function PacientesPage({ searchParams }: PageProps) {
   const todayStr = todayInTz(clinicSettings.timezone);
 
   return (
-    <div className="fade-in p-6 sm:p-8 lg:px-10">
+    <div className="fade-in p-4 sm:p-8 lg:px-10">
       {/* Page header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.025em] text-slate-900">
+          <h1 className="text-2xl font-semibold leading-[1.15] tracking-[-0.025em] text-slate-900 sm:text-[28px] md:text-[32px]">
             Pacientes
           </h1>
           <p className="mt-1 text-sm text-slate-500">

@@ -100,9 +100,10 @@ export default async function DashboardLayout({
 
   return (
     // Two frosted panels float over the ambient body backdrop, separated by a
-    // 14px gutter. h-screen + flex-col keeps each panel exactly one viewport
-    // tall so the sidebar never scrolls away its user block.
-    <div className="flex h-screen gap-3.5 overflow-hidden p-3.5">
+    // 14px gutter. h-dvh + flex-col keeps each panel exactly one *visible*
+    // viewport tall (100vh hides the bottom edge behind collapsing mobile
+    // browser chrome) so the sidebar never scrolls away its user block.
+    <div className="flex h-dvh gap-2 overflow-hidden p-2 sm:gap-3.5 sm:p-3.5">
       {/* ── Desktop sidebar — light, frosted, floating ── */}
       <aside className="glass-panel hidden w-64 shrink-0 flex-col overflow-hidden lg:flex">
         <div className="flex h-16 shrink-0 items-center border-b border-slate-900/6 px-5">
