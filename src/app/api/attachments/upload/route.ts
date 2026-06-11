@@ -14,6 +14,13 @@ import {
   isVideoMime,
   maxBytesForMime,
 } from '@/lib/validators/attachment';
+import {
+  ImageProcessingError,
+  PROCESSED_IMAGE_EXT,
+  PROCESSED_IMAGE_MIME,
+  imageMagicBytesMatch,
+  processImageToJpeg,
+} from '@/lib/images';
 
 // Cap how large a request body we're willing to buffer. Lets the handler
 // reject oversize uploads before pulling the full payload into memory.
@@ -28,10 +35,9 @@ function emptyToUndefined(v: FormDataEntryValue | null): string | undefined {
 // File-signature ("magic bytes") check. Browsers derive `file.type` from the
 // filename extension, so a `.exe` renamed to `.pdf` can pass the declared-MIME
 // whitelist. We re-verify by looking at the first bytes of the buffer so the
-// declared type has to match what's actually on disk.
+// declared type has to match what's actually on disk. Image signatures live in
+// @/lib/images (shared with the avatar actions); PDF and video stay here.
 const PDF_SIG = Buffer.from('%PDF-');
-const JPEG_SIG = Buffer.from([0xff, 0xd8, 0xff]);
-const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 // MP4 / QuickTime use the ISO BMFF container: bytes 4..8 are the box type
 // "ftyp" followed by a 4-byte brand. Both MP4 and MOV start with an `ftyp`
@@ -59,11 +65,8 @@ function magicBytesMatch(buffer: Buffer, mime: string): boolean {
   if (mime === 'application/pdf') {
     return buffer.length >= PDF_SIG.length && buffer.subarray(0, PDF_SIG.length).equals(PDF_SIG);
   }
-  if (mime === 'image/jpeg' || mime === 'image/jpg') {
-    return buffer.length >= JPEG_SIG.length && buffer.subarray(0, JPEG_SIG.length).equals(JPEG_SIG);
-  }
-  if (mime === 'image/png') {
-    return buffer.length >= PNG_SIG.length && buffer.subarray(0, PNG_SIG.length).equals(PNG_SIG);
+  if (mime.startsWith('image/')) {
+    return imageMagicBytesMatch(buffer, mime);
   }
   if (mime === 'video/mp4' || mime === 'video/quicktime') {
     // Need at least the 4-byte box size + "ftyp" + 4-byte brand = 12 bytes
@@ -168,7 +171,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Tipo de archivo no permitido. Solo PDF, JPG, PNG, MP4 o MOV.',
+        error:
+          'Tipo de archivo no permitido. Solo PDF, imágenes (JPG, PNG, WebP, HEIC, AVIF), MP4 o MOV.',
       },
       { status: 415 },
     );
@@ -316,11 +320,33 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Images are re-encoded to JPEG before storage: strips EXIF (GPS, device
+  // serials), applies orientation, and normalizes HEIC/WebP/AVIF to a format
+  // every browser renders. PDFs and videos are stored as-is.
+  let storedBuffer: Buffer = buffer;
+  let storedMime = mime;
+  let storedExt = ext;
+  if (mime.startsWith('image/')) {
+    try {
+      storedBuffer = await processImageToJpeg(buffer, mime);
+      storedMime = PROCESSED_IMAGE_MIME;
+      storedExt = PROCESSED_IMAGE_EXT;
+    } catch (err) {
+      if (err instanceof ImageProcessingError) {
+        return NextResponse.json(
+          { success: false, error: err.message },
+          { status: 422 },
+        );
+      }
+      throw err;
+    }
+  }
+
   const attachmentId = generateId();
-  const storageKey = `${generateId()}.${ext}`;
+  const storageKey = `${generateId()}.${storedExt}`;
 
   try {
-    await uploadFile(buffer, storageKey, mime);
+    await uploadFile(storedBuffer, storageKey, storedMime);
   } catch (err) {
     console.error('[attachments] upload to storage failed', err);
     return NextResponse.json(
@@ -340,8 +366,8 @@ export async function POST(request: NextRequest) {
     uploadedBy: session.userId,
     fileName: displayName.slice(0, 255),
     storageKey,
-    fileType: mime,
-    fileSizeBytes: buffer.byteLength,
+    fileType: storedMime,
+    fileSizeBytes: storedBuffer.byteLength,
     category: meta.category ?? 'other',
     description: meta.description ?? null,
   };
@@ -401,8 +427,8 @@ export async function POST(request: NextRequest) {
       patientId: meta.patient_id,
       clinicalNoteId: meta.clinical_note_id ?? null,
       category: created.category,
-      fileType: mime,
-      fileSizeBytes: buffer.byteLength,
+      fileType: storedMime,
+      fileSizeBytes: storedBuffer.byteLength,
     },
     ipAddress: await getClientIpFromHeaders(),
   });

@@ -9,6 +9,14 @@ import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { generateId } from '@/lib/utils/generate-id';
 import { deleteFile, uploadFile } from '@/lib/storage';
+import {
+  ALLOWED_IMAGE_INPUT_MIME,
+  ImageProcessingError,
+  PROCESSED_IMAGE_EXT,
+  PROCESSED_IMAGE_MIME,
+  imageMagicBytesMatch,
+  processImageToJpeg,
+} from '@/lib/images';
 
 export type PartnerAvatarActionState =
   | null
@@ -16,25 +24,6 @@ export type PartnerAvatarActionState =
   | { success: false; error: string };
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
-
-const ALLOWED_AVATAR_MIME: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/jpg': 'jpg',
-  'image/png': 'png',
-};
-
-const JPEG_SIG = Buffer.from([0xff, 0xd8, 0xff]);
-const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-
-function magicBytesMatch(buffer: Buffer, mime: string): boolean {
-  if (mime === 'image/png') {
-    return buffer.length >= PNG_SIG.length && buffer.subarray(0, PNG_SIG.length).equals(PNG_SIG);
-  }
-  if (mime === 'image/jpeg' || mime === 'image/jpg') {
-    return buffer.length >= JPEG_SIG.length && buffer.subarray(0, JPEG_SIG.length).equals(JPEG_SIG);
-  }
-  return false;
-}
 
 export async function updatePartnerAvatar(
   _prevState: PartnerAvatarActionState,
@@ -70,8 +59,9 @@ export async function updatePartnerAvatar(
   if (file.size > MAX_AVATAR_BYTES) return { success: false, error: 'La foto excede el tamaño máximo de 2MB' };
 
   const mime = file.type?.toLowerCase() ?? '';
-  const ext = ALLOWED_AVATAR_MIME[mime];
-  if (!ext) return { success: false, error: 'Solo se permiten imágenes JPG o PNG' };
+  if (!ALLOWED_IMAGE_INPUT_MIME.has(mime)) {
+    return { success: false, error: 'Solo se permiten imágenes (JPG, PNG, WebP, HEIC o AVIF)' };
+  }
 
   const partnerRows = await db
     .select({ id: patientPartners.id, avatarStorageKey: patientPartners.avatarStorageKey })
@@ -85,14 +75,26 @@ export async function updatePartnerAvatar(
 
   const previousKey = partnerRows[0].avatarStorageKey;
   const buffer = Buffer.from(await file.arrayBuffer());
-  if (!magicBytesMatch(buffer, mime)) {
+  if (!imageMagicBytesMatch(buffer, mime)) {
     return { success: false, error: 'El contenido del archivo no coincide con el tipo declarado' };
   }
 
-  const storageKey = `${generateId()}.${ext}`;
+  // Re-encode to JPEG: strips EXIF (GPS, device serials), applies orientation,
+  // normalizes phone-camera formats. Same pipeline as the patient avatar.
+  let cleanBuffer: Buffer;
+  try {
+    cleanBuffer = await processImageToJpeg(buffer, mime);
+  } catch (err) {
+    if (err instanceof ImageProcessingError) {
+      return { success: false, error: err.message };
+    }
+    throw err;
+  }
+
+  const storageKey = `${generateId()}.${PROCESSED_IMAGE_EXT}`;
 
   try {
-    await uploadFile(buffer, storageKey, mime);
+    await uploadFile(cleanBuffer, storageKey, PROCESSED_IMAGE_MIME);
   } catch (err) {
     console.error('[partner-avatar] storage upload failed', err);
     return { success: false, error: 'No se pudo subir la foto' };
