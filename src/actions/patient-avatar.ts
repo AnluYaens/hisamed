@@ -9,6 +9,14 @@ import { isDemoSession, demoWriteBlocked } from '@/lib/auth/demo';
 import { auditLog, getClientIpFromHeaders } from '@/lib/audit';
 import { generateId } from '@/lib/utils/generate-id';
 import { deleteFile, uploadFile } from '@/lib/storage';
+import {
+  ALLOWED_IMAGE_INPUT_MIME,
+  ImageProcessingError,
+  PROCESSED_IMAGE_EXT,
+  PROCESSED_IMAGE_MIME,
+  imageMagicBytesMatch,
+  processImageToJpeg,
+} from '@/lib/images';
 
 export type PatientAvatarActionState =
   | null
@@ -16,28 +24,6 @@ export type PatientAvatarActionState =
   | { success: false; error: string };
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2 MB
-
-const ALLOWED_AVATAR_MIME: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/jpg': 'jpg',
-  'image/png': 'png',
-};
-
-// Same magic-bytes check used in the attachments upload route. The browser
-// derives `file.type` from the extension, so a renamed binary can pass the
-// declared-MIME whitelist; this verifies the actual bytes.
-const JPEG_SIG = Buffer.from([0xff, 0xd8, 0xff]);
-const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-
-function magicBytesMatch(buffer: Buffer, mime: string): boolean {
-  if (mime === 'image/png') {
-    return buffer.length >= PNG_SIG.length && buffer.subarray(0, PNG_SIG.length).equals(PNG_SIG);
-  }
-  if (mime === 'image/jpeg' || mime === 'image/jpg') {
-    return buffer.length >= JPEG_SIG.length && buffer.subarray(0, JPEG_SIG.length).equals(JPEG_SIG);
-  }
-  return false;
-}
 
 export async function updatePatientAvatar(
   _prevState: PatientAvatarActionState,
@@ -69,9 +55,8 @@ export async function updatePatientAvatar(
   }
 
   const mime = file.type?.toLowerCase() ?? '';
-  const ext = ALLOWED_AVATAR_MIME[mime];
-  if (!ext) {
-    return { success: false, error: 'Solo se permiten imágenes JPG o PNG' };
+  if (!ALLOWED_IMAGE_INPUT_MIME.has(mime)) {
+    return { success: false, error: 'Solo se permiten imágenes (JPG, PNG, WebP, HEIC o AVIF)' };
   }
 
   const rows = await db
@@ -88,20 +73,33 @@ export async function updatePatientAvatar(
   if (buffer.byteLength > MAX_AVATAR_BYTES) {
     return { success: false, error: 'La foto excede el tamaño máximo de 2MB' };
   }
-  if (!magicBytesMatch(buffer, mime)) {
+  if (!imageMagicBytesMatch(buffer, mime)) {
     return {
       success: false,
       error: 'El contenido del archivo no coincide con el tipo declarado',
     };
   }
 
+  // Re-encode to JPEG: strips EXIF (GPS, device serials), applies orientation,
+  // and normalizes phone-camera formats (HEIC/WebP) so browsers can render
+  // the avatar. The stored object is always image/jpeg.
+  let cleanBuffer: Buffer;
+  try {
+    cleanBuffer = await processImageToJpeg(buffer, mime);
+  } catch (err) {
+    if (err instanceof ImageProcessingError) {
+      return { success: false, error: err.message };
+    }
+    throw err;
+  }
+
   // Same key pattern as attachments: UUID + extension. Avatars live alongside
   // attachments in the same bucket — no need for a separate prefix because the
   // DB column is the only authoritative reference.
-  const storageKey = `${generateId()}.${ext}`;
+  const storageKey = `${generateId()}.${PROCESSED_IMAGE_EXT}`;
 
   try {
-    await uploadFile(buffer, storageKey, mime);
+    await uploadFile(cleanBuffer, storageKey, PROCESSED_IMAGE_MIME);
   } catch (err) {
     console.error('[patient-avatar] storage upload failed', err);
     return { success: false, error: 'No se pudo subir la foto' };

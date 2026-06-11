@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import type { NextRequest } from 'next/server';
+import sharp from 'sharp';
 
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -55,9 +58,19 @@ const PATIENT_ID = '44444444-4444-4444-8444-444444444444';
 const NOTE_ID = '55555555-5555-4555-8555-555555555555';
 const ATTACHMENT_ID = '66666666-6666-4666-8666-666666666666';
 
-const PNG_BYTES = Buffer.from([
-  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00,
-]);
+// Images now go through a real sharp decode on upload, so fixtures must be
+// decodable images — a bare signature is no longer enough.
+const PNG_BYTES = await sharp({
+  create: { width: 4, height: 4, channels: 3, background: { r: 10, g: 20, b: 30 } },
+})
+  .png()
+  .toBuffer();
+
+const HEIC_FIXTURE = readFileSync(
+  path.resolve(__dirname, '../../../../../tests/fixtures/sample.heic'),
+);
+
+const JPEG_SIG = Buffer.from([0xff, 0xd8, 0xff]);
 
 function selectRows(rows: unknown[]) {
   return {
@@ -248,5 +261,71 @@ describe('POST /api/attachments/upload', () => {
     expect(mocks.uploadFile).not.toHaveBeenCalled();
     expect(mocks.insert).not.toHaveBeenCalled();
     expect(mocks.safeAuditLog).toHaveBeenCalledOnce();
+  });
+
+  it('accepts AVIF and stores it re-encoded as JPEG with a .jpg key', async () => {
+    mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
+    queueQuotaOk();
+    mocks.insert.mockReturnValueOnce(
+      insertRows([{ id: ATTACHMENT_ID, category: 'imaging', uploadedAt: new Date() }]),
+    );
+
+    const avifBytes = await sharp({
+      create: { width: 4, height: 4, channels: 3, background: { r: 50, g: 60, b: 70 } },
+    })
+      .avif()
+      .toBuffer();
+    const avif = new File([avifBytes], 'eco.avif', { type: 'image/avif' });
+    const res = await POST(requestFor({ file: avif, category: 'imaging' }));
+
+    expect(res.status).toBe(201);
+    expect(mocks.uploadFile).toHaveBeenCalledOnce();
+    const [storedBuffer, storageKey, contentType] = mocks.uploadFile.mock.calls[0];
+    expect(storedBuffer.subarray(0, 3).equals(JPEG_SIG)).toBe(true);
+    expect(storageKey.endsWith('.jpg')).toBe(true);
+    expect(contentType).toBe('image/jpeg');
+    const insertedValues = mocks.insert.mock.results[0].value.values.mock.calls[0][0];
+    expect(insertedValues.fileType).toBe('image/jpeg');
+    expect(insertedValues.fileSizeBytes).toBe(storedBuffer.byteLength);
+  });
+
+  it('accepts Samsung-style HEIC and stores it re-encoded as JPEG', async () => {
+    mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
+    queueQuotaOk();
+    mocks.insert.mockReturnValueOnce(
+      insertRows([{ id: ATTACHMENT_ID, category: 'other', uploadedAt: new Date() }]),
+    );
+
+    const heic = new File([HEIC_FIXTURE], 'foto.heic', { type: 'image/heic' });
+    const res = await POST(requestFor({ file: heic }));
+
+    expect(res.status).toBe(201);
+    const [storedBuffer, storageKey, contentType] = mocks.uploadFile.mock.calls[0];
+    expect(storedBuffer.subarray(0, 3).equals(JPEG_SIG)).toBe(true);
+    expect(storageKey.endsWith('.jpg')).toBe(true);
+    expect(contentType).toBe('image/jpeg');
+  });
+
+  it('rejects an undecodable image with a user-friendly 422, not a 500', async () => {
+    mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
+    queueQuotaOk();
+
+    // Valid JPEG magic bytes but garbage body: passes the signature check,
+    // fails the sharp decode.
+    const corrupt = new File(
+      [Buffer.concat([JPEG_SIG, Buffer.from('garbage, not scan data')])],
+      'roto.jpg',
+      { type: 'image/jpeg' },
+    );
+    const res = await POST(requestFor({ file: corrupt }));
+    const body = await res.json();
+
+    expect(res.status).toBe(422);
+    expect(body.success).toBe(false);
+    expect(body.error).toBe(
+      'No se pudo procesar la imagen. El archivo puede estar dañado o en un formato no compatible.',
+    );
+    expect(mocks.uploadFile).not.toHaveBeenCalled();
+    expect(mocks.insert).not.toHaveBeenCalled();
   });
 });
