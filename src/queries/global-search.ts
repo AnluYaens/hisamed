@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { clinicalNotes, patients } from '@/lib/db/schema';
 import type { UserRole } from '@/lib/db/schema';
@@ -43,6 +43,55 @@ function escapeLike(input: string): string {
   return input.replace(/\\/g, '\\\\').replace(/[%_]/g, (ch) => `\\${ch}`);
 }
 
+function searchTokens(input: string): string[] {
+  return input
+    .replace(/[,;]+/g, ' ')
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
+function patientSearchCondition(tokens: string[]) {
+  if (tokens.length === 0) return undefined;
+
+  const fullName = sql<string>`concat_ws(' ', ${patients.firstName}, ${patients.lastName})`;
+  const reversedFullName = sql<string>`concat_ws(' ', ${patients.lastName}, ${patients.firstName})`;
+
+  return and(
+    ...tokens.map((token) => {
+      const pattern = `%${escapeLike(token)}%`;
+      return or(
+        ilike(patients.firstName, pattern),
+        ilike(patients.lastName, pattern),
+        ilike(patients.idNumber, pattern),
+        ilike(patients.phone, pattern),
+        sql`${fullName} ILIKE ${pattern}`,
+        sql`${reversedFullName} ILIKE ${pattern}`,
+      );
+    }),
+  );
+}
+
+function patientSearchRank(rawSearch: string) {
+  const phrase = escapeLike(rawSearch.replace(/[,;]+/g, ' ').trim().replace(/\s+/g, ' '));
+  const prefix = `${phrase}%`;
+  const contains = `%${phrase}%`;
+  const fullName = sql<string>`concat_ws(' ', ${patients.firstName}, ${patients.lastName})`;
+  const reversedFullName = sql<string>`concat_ws(' ', ${patients.lastName}, ${patients.firstName})`;
+
+  return sql<number>`case
+    when ${fullName} ILIKE ${prefix} then 0
+    when ${reversedFullName} ILIKE ${prefix} then 0
+    when ${patients.firstName} ILIKE ${prefix} then 1
+    when ${patients.lastName} ILIKE ${prefix} then 1
+    when ${fullName} ILIKE ${contains} then 2
+    when ${reversedFullName} ILIKE ${contains} then 2
+    when ${patients.idNumber} ILIKE ${prefix} then 3
+    else 4
+  end`;
+}
+
 function truncate(text: string, max = SNIPPET_MAX): string {
   const clean = text.trim().replace(/\s+/g, ' ');
   if (clean.length <= max) return clean;
@@ -70,8 +119,12 @@ const EMPTY_RESULTS: GlobalSearchResults = { patients: [], notes: [] };
 // enough patients/notes for the per-clinic scan to become slow.
 async function searchPatientsFor(
   clinicId: string,
-  pattern: string,
+  rawQuery: string,
 ): Promise<PatientSearchHit[]> {
+  const tokens = searchTokens(rawQuery);
+  const searchCondition = patientSearchCondition(tokens);
+  if (!searchCondition) return [];
+
   const rows = await db
     .select({
       id: patients.id,
@@ -84,15 +137,10 @@ async function searchPatientsFor(
     .where(
       and(
         eq(patients.clinicId, clinicId),
-        or(
-          ilike(patients.firstName, pattern),
-          ilike(patients.lastName, pattern),
-          ilike(patients.idNumber, pattern),
-          ilike(patients.phone, pattern),
-        ),
+        searchCondition,
       ),
     )
-    .orderBy(desc(patients.createdAt))
+    .orderBy(asc(patientSearchRank(rawQuery)), asc(patients.lastName), asc(patients.firstName))
     .limit(SEARCH_GROUP_LIMIT);
 
   return rows.map((r) => ({
@@ -176,7 +224,7 @@ export async function globalSearch(
   const canSearchNotes = role === 'admin' || role === 'doctor';
 
   const [patientHits, noteHits] = await Promise.all([
-    searchPatientsFor(clinicId, pattern),
+    searchPatientsFor(clinicId, query),
     canSearchNotes ? searchNotesFor(clinicId, pattern) : Promise.resolve([]),
   ]);
 
