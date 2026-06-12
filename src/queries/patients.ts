@@ -1,4 +1,4 @@
-import { and, count, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { medicalHistories, patients, patientPartners } from '@/lib/db/schema';
 
@@ -10,6 +10,55 @@ const DEFAULT_LIMIT = 20;
 // Postgres.
 function escapeLike(input: string): string {
   return input.replace(/\\/g, '\\\\').replace(/[%_]/g, (ch) => `\\${ch}`);
+}
+
+function searchTokens(input: string): string[] {
+  return input
+    .replace(/[,;]+/g, ' ')
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
+function patientSearchCondition(tokens: string[]) {
+  if (tokens.length === 0) return undefined;
+
+  const fullName = sql<string>`concat_ws(' ', ${patients.firstName}, ${patients.lastName})`;
+  const reversedFullName = sql<string>`concat_ws(' ', ${patients.lastName}, ${patients.firstName})`;
+
+  return and(
+    ...tokens.map((token) => {
+      const pattern = `%${escapeLike(token)}%`;
+      return or(
+        ilike(patients.firstName, pattern),
+        ilike(patients.lastName, pattern),
+        ilike(patients.idNumber, pattern),
+        ilike(patients.phone, pattern),
+        sql`${fullName} ILIKE ${pattern}`,
+        sql`${reversedFullName} ILIKE ${pattern}`,
+      );
+    }),
+  );
+}
+
+function patientSearchRank(rawSearch: string) {
+  const phrase = escapeLike(rawSearch.replace(/[,;]+/g, ' ').trim().replace(/\s+/g, ' '));
+  const prefix = `${phrase}%`;
+  const contains = `%${phrase}%`;
+  const fullName = sql<string>`concat_ws(' ', ${patients.firstName}, ${patients.lastName})`;
+  const reversedFullName = sql<string>`concat_ws(' ', ${patients.lastName}, ${patients.firstName})`;
+
+  return sql<number>`case
+    when ${fullName} ILIKE ${prefix} then 0
+    when ${reversedFullName} ILIKE ${prefix} then 0
+    when ${patients.firstName} ILIKE ${prefix} then 1
+    when ${patients.lastName} ILIKE ${prefix} then 1
+    when ${fullName} ILIKE ${contains} then 2
+    when ${reversedFullName} ILIKE ${contains} then 2
+    when ${patients.idNumber} ILIKE ${prefix} then 3
+    else 4
+  end`;
 }
 
 export interface GetPatientsOptions {
@@ -54,15 +103,11 @@ export async function getPatients(
   const offset = (page - 1) * limit;
 
   const trimmed = search?.trim() ?? '';
-  const pattern = trimmed.length > 0 ? `%${escapeLike(trimmed)}%` : null;
-  const searchCondition = pattern
-    ? or(
-        ilike(patients.firstName, pattern),
-        ilike(patients.lastName, pattern),
-        ilike(patients.idNumber, pattern),
-        ilike(patients.phone, pattern),
-      )
-    : undefined;
+  const tokens = searchTokens(trimmed);
+  const searchCondition = patientSearchCondition(tokens);
+  const orderBy = searchCondition
+    ? [asc(patientSearchRank(trimmed)), asc(patients.lastName), asc(patients.firstName)]
+    : [desc(patients.createdAt)];
 
   const baseWhere = and(eq(patients.clinicId, clinicId), searchCondition);
 
@@ -89,14 +134,14 @@ export async function getPatients(
           .from(patients)
           .leftJoin(medicalHistories, eq(medicalHistories.patientId, patients.id))
           .where(baseWhere)
-          .orderBy(desc(patients.createdAt))
+          .orderBy(...orderBy)
           .limit(limit)
           .offset(offset)
       : db
           .select(baseSelect)
           .from(patients)
           .where(baseWhere)
-          .orderBy(desc(patients.createdAt))
+          .orderBy(...orderBy)
           .limit(limit)
           .offset(offset),
   ]);
