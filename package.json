@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "node scripts/lint.js",
-    "type-check": "tsc --noEmit --pretty false",
+    "type-check": "tsc --noEmit --pretty false --incremental false",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "MIGRATE_TARGET=local drizzle-kit migrate",
     "db:migrate:prod": "MIGRATE_TARGET=prod drizzle-kit migrate",

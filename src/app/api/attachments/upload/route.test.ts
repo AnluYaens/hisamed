@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import type { NextRequest } from "next/server";
-import sharp from "sharp";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import type { NextRequest } from 'next/server';
+import sharp from 'sharp';
 
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -18,11 +18,11 @@ const mocks = vi.hoisted(() => ({
   consumeRateLimit: vi.fn(),
 }));
 
-vi.mock("@/lib/auth/session", () => ({
+vi.mock('@/lib/auth/session', () => ({
   getSession: mocks.getSession,
 }));
 
-vi.mock("@/lib/db", () => ({
+vi.mock('@/lib/db', () => ({
   db: {
     select: mocks.select,
     insert: mocks.insert,
@@ -30,33 +30,33 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-vi.mock("@/lib/storage", () => ({
+vi.mock('@/lib/storage', () => ({
   uploadFile: mocks.uploadFile,
   deleteFile: mocks.deleteFile,
 }));
 
-vi.mock("@/lib/audit", () => ({
+vi.mock('@/lib/audit', () => ({
   auditLog: mocks.auditLog,
   safeAuditLog: mocks.safeAuditLog,
   getClientIpFromHeaders: mocks.getClientIpFromHeaders,
 }));
 
-vi.mock("@/lib/rate-limit", () => ({
+vi.mock('@/lib/rate-limit', () => ({
   consumeRateLimit: mocks.consumeRateLimit,
 }));
 
-vi.mock("@/lib/utils/generate-id", () => ({
+vi.mock('@/lib/utils/generate-id', () => ({
   generateId: mocks.generateId,
 }));
 
-import { POST } from "./route";
+import { POST } from './route';
 
-const CLINIC_ID = "11111111-1111-4111-8111-111111111111";
-const DOCTOR_ID = "22222222-2222-4222-8222-222222222222";
-const ADMIN_ID = "33333333-3333-4333-8333-333333333333";
-const PATIENT_ID = "44444444-4444-4444-8444-444444444444";
-const NOTE_ID = "55555555-5555-4555-8555-555555555555";
-const ATTACHMENT_ID = "66666666-6666-4666-8666-666666666666";
+const CLINIC_ID = '11111111-1111-4111-8111-111111111111';
+const DOCTOR_ID = '22222222-2222-4222-8222-222222222222';
+const ADMIN_ID = '33333333-3333-4333-8333-333333333333';
+const PATIENT_ID = '44444444-4444-4444-8444-444444444444';
+const NOTE_ID = '55555555-5555-4555-8555-555555555555';
+const ATTACHMENT_ID = '66666666-6666-4666-8666-666666666666';
 
 // Images now go through a real sharp decode on upload, so fixtures must be
 // decodable images — a bare signature is no longer enough.
@@ -72,7 +72,7 @@ const PNG_BYTES = await sharp({
   .toBuffer();
 
 const HEIC_FIXTURE = readFileSync(
-  path.resolve(__dirname, "../../../../../tests/fixtures/sample.heic"),
+  path.resolve(__dirname, '../../../../../tests/fixtures/sample.heic'),
 );
 
 const JPEG_SIG = Buffer.from([0xff, 0xd8, 0xff]);
@@ -95,10 +95,10 @@ function insertRows(rows: unknown[]) {
 }
 
 function requestFor({
-  file = new File([new Uint8Array(PNG_BYTES)], "eco.png", {
-    type: "image/png",
+  file = new File([new Uint8Array(PNG_BYTES)], 'eco.png', {
+    type: 'image/png',
   }),
-  category = "other",
+  category = 'other',
   clinicalNoteId,
 }: {
   file?: File;
@@ -106,13 +106,13 @@ function requestFor({
   clinicalNoteId?: string;
 } = {}): NextRequest {
   const formData = new FormData();
-  formData.append("file", file);
-  formData.append("patient_id", PATIENT_ID);
-  formData.append("category", category);
-  if (clinicalNoteId) formData.append("clinical_note_id", clinicalNoteId);
+  formData.append('file', file);
+  formData.append('patient_id', PATIENT_ID);
+  formData.append('category', category);
+  if (clinicalNoteId) formData.append('clinical_note_id', clinicalNoteId);
 
-  return new Request("http://localhost/api/attachments/upload", {
-    method: "POST",
+  return new Request('http://localhost/api/attachments/upload', {
+    method: 'POST',
     body: formData,
   }) as NextRequest;
 }
@@ -122,7 +122,7 @@ beforeEach(() => {
   mocks.getSession.mockResolvedValue({
     userId: DOCTOR_ID,
     clinicId: CLINIC_ID,
-    role: "doctor",
+    role: 'doctor',
   });
   mocks.uploadFile.mockResolvedValue(undefined);
   mocks.deleteFile.mockResolvedValue(undefined);
@@ -136,7 +136,7 @@ beforeEach(() => {
   });
   mocks.generateId
     .mockReturnValueOnce(ATTACHMENT_ID)
-    .mockReturnValueOnce("77777777-7777-4777-8777-777777777777");
+    .mockReturnValueOnce('77777777-7777-4777-8777-777777777777');
 });
 
 // The route runs a 2-query storage quota check (clinic plan limit +
@@ -156,11 +156,11 @@ function selectAtWhere(rows: unknown[]) {
 function queueQuotaOk() {
   mocks.select
     .mockReturnValueOnce(selectRows([{ maxStorageMb: 1024 }]))
-    .mockReturnValueOnce(selectAtWhere([{ used: "0" }]));
+    .mockReturnValueOnce(selectAtWhere([{ used: '0' }]));
 }
 
-describe("POST /api/attachments/upload", () => {
-  it("rejects uploads linked to a signed clinical note before storing bytes", async () => {
+describe('POST /api/attachments/upload', () => {
+  it('rejects uploads linked to a signed clinical note before storing bytes', async () => {
     mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
     queueQuotaOk();
     mocks.select.mockReturnValueOnce(
@@ -168,7 +168,7 @@ describe("POST /api/attachments/upload", () => {
     );
 
     const res = await POST(
-      requestFor({ clinicalNoteId: NOTE_ID, category: "ultrasound" }),
+      requestFor({ clinicalNoteId: NOTE_ID, category: 'ultrasound' }),
     );
     const body = await res.json();
 
@@ -178,11 +178,11 @@ describe("POST /api/attachments/upload", () => {
     expect(mocks.insert).not.toHaveBeenCalled();
   });
 
-  it("rejects note-linked uploads from non-author or non-doctor users", async () => {
+  it('rejects note-linked uploads from non-author or non-doctor users', async () => {
     mocks.getSession.mockResolvedValue({
       userId: ADMIN_ID,
       clinicId: CLINIC_ID,
-      role: "admin",
+      role: 'admin',
     });
     mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
     queueQuotaOk();
@@ -197,27 +197,27 @@ describe("POST /api/attachments/upload", () => {
     expect(mocks.insert).not.toHaveBeenCalled();
   });
 
-  it("requires ultrasound uploads to be linked to a clinical note", async () => {
-    const res = await POST(requestFor({ category: "ultrasound" }));
+  it('requires ultrasound uploads to be linked to a clinical note', async () => {
+    const res = await POST(requestFor({ category: 'ultrasound' }));
 
     expect(res.status).toBe(400);
     expect(mocks.select).not.toHaveBeenCalled();
     expect(mocks.uploadFile).not.toHaveBeenCalled();
   });
 
-  it("enforces video magic bytes server-side", async () => {
+  it('enforces video magic bytes server-side', async () => {
     mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
     queueQuotaOk();
 
     const spoofedMp4 = new File(
-      [new Uint8Array(Buffer.from("not an mp4"))],
-      "clip.mp4",
+      [new Uint8Array(Buffer.from('not an mp4'))],
+      'clip.mp4',
       {
-        type: "video/mp4",
+        type: 'video/mp4',
       },
     );
     const res = await POST(
-      requestFor({ file: spoofedMp4, category: "imaging" }),
+      requestFor({ file: spoofedMp4, category: 'imaging' }),
     );
 
     expect(res.status).toBe(415);
@@ -225,8 +225,8 @@ describe("POST /api/attachments/upload", () => {
     expect(mocks.insert).not.toHaveBeenCalled();
   });
 
-  it("redacts storageKey from successful upload responses", async () => {
-    const uploadedAt = new Date("2026-05-11T12:00:00.000Z");
+  it('redacts storageKey from successful upload responses', async () => {
+    const uploadedAt = new Date('2026-05-11T12:00:00.000Z');
     mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
     queueQuotaOk();
     mocks.insert.mockReturnValueOnce(
@@ -236,11 +236,11 @@ describe("POST /api/attachments/upload", () => {
           patientId: PATIENT_ID,
           clinicalNoteId: null,
           uploadedBy: DOCTOR_ID,
-          fileName: "eco.png",
-          storageKey: "77777777-7777-4777-8777-777777777777.png",
-          fileType: "image/png",
+          fileName: 'eco.png',
+          storageKey: '77777777-7777-4777-8777-777777777777.png',
+          fileType: 'image/png',
           fileSizeBytes: PNG_BYTES.byteLength,
-          category: "other",
+          category: 'other',
           description: null,
           uploadedAt,
         },
@@ -257,7 +257,7 @@ describe("POST /api/attachments/upload", () => {
     expect(mocks.uploadFile).toHaveBeenCalledOnce();
   });
 
-  it("returns 429 when rate limited, before reading the body or touching storage", async () => {
+  it('returns 429 when rate limited, before reading the body or touching storage', async () => {
     mocks.consumeRateLimit.mockResolvedValue({
       allowed: false,
       remaining: 0,
@@ -269,21 +269,21 @@ describe("POST /api/attachments/upload", () => {
 
     expect(res.status).toBe(429);
     expect(body.error).toBe(
-      "Has alcanzado el límite de solicitudes. Intenta nuevamente más tarde.",
+      'Has alcanzado el límite de solicitudes. Intenta nuevamente más tarde.',
     );
-    expect(res.headers.get("Retry-After")).toBe("900");
+    expect(res.headers.get('Retry-After')).toBe('900');
     expect(mocks.select).not.toHaveBeenCalled();
     expect(mocks.uploadFile).not.toHaveBeenCalled();
     expect(mocks.insert).not.toHaveBeenCalled();
     expect(mocks.safeAuditLog).toHaveBeenCalledOnce();
   });
 
-  it("accepts AVIF and stores it re-encoded as JPEG with a .jpg key", async () => {
+  it('accepts AVIF and stores it re-encoded as JPEG with a .jpg key', async () => {
     mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
     queueQuotaOk();
     mocks.insert.mockReturnValueOnce(
       insertRows([
-        { id: ATTACHMENT_ID, category: "imaging", uploadedAt: new Date() },
+        { id: ATTACHMENT_ID, category: 'imaging', uploadedAt: new Date() },
       ]),
     );
 
@@ -297,35 +297,35 @@ describe("POST /api/attachments/upload", () => {
     })
       .avif()
       .toBuffer();
-    const avif = new File([new Uint8Array(avifBytes)], "eco.avif", {
-      type: "image/avif",
+    const avif = new File([new Uint8Array(avifBytes)], 'eco.avif', {
+      type: 'image/avif',
     });
-    const res = await POST(requestFor({ file: avif, category: "imaging" }));
+    const res = await POST(requestFor({ file: avif, category: 'imaging' }));
 
     expect(res.status).toBe(201);
     expect(mocks.uploadFile).toHaveBeenCalledOnce();
     const [storedBuffer, storageKey, contentType] =
       mocks.uploadFile.mock.calls[0];
     expect(storedBuffer.subarray(0, 3).equals(JPEG_SIG)).toBe(true);
-    expect(storageKey.endsWith(".jpg")).toBe(true);
-    expect(contentType).toBe("image/jpeg");
+    expect(storageKey.endsWith('.jpg')).toBe(true);
+    expect(contentType).toBe('image/jpeg');
     const insertedValues =
       mocks.insert.mock.results[0].value.values.mock.calls[0][0];
-    expect(insertedValues.fileType).toBe("image/jpeg");
+    expect(insertedValues.fileType).toBe('image/jpeg');
     expect(insertedValues.fileSizeBytes).toBe(storedBuffer.byteLength);
   });
 
-  it("accepts Samsung-style HEIC and stores it re-encoded as JPEG", async () => {
+  it('accepts Samsung-style HEIC and stores it re-encoded as JPEG', async () => {
     mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
     queueQuotaOk();
     mocks.insert.mockReturnValueOnce(
       insertRows([
-        { id: ATTACHMENT_ID, category: "other", uploadedAt: new Date() },
+        { id: ATTACHMENT_ID, category: 'other', uploadedAt: new Date() },
       ]),
     );
 
-    const heic = new File([new Uint8Array(HEIC_FIXTURE)], "foto.heic", {
-      type: "image/heic",
+    const heic = new File([new Uint8Array(HEIC_FIXTURE)], 'foto.heic', {
+      type: 'image/heic',
     });
     const res = await POST(requestFor({ file: heic }));
 
@@ -333,11 +333,11 @@ describe("POST /api/attachments/upload", () => {
     const [storedBuffer, storageKey, contentType] =
       mocks.uploadFile.mock.calls[0];
     expect(storedBuffer.subarray(0, 3).equals(JPEG_SIG)).toBe(true);
-    expect(storageKey.endsWith(".jpg")).toBe(true);
-    expect(contentType).toBe("image/jpeg");
+    expect(storageKey.endsWith('.jpg')).toBe(true);
+    expect(contentType).toBe('image/jpeg');
   });
 
-  it("rejects an undecodable image with a user-friendly 422, not a 500", async () => {
+  it('rejects an undecodable image with a user-friendly 422, not a 500', async () => {
     mocks.select.mockReturnValueOnce(selectRows([{ id: PATIENT_ID }]));
     queueQuotaOk();
 
@@ -346,11 +346,11 @@ describe("POST /api/attachments/upload", () => {
     const corrupt = new File(
       [
         new Uint8Array(
-          Buffer.concat([JPEG_SIG, Buffer.from("garbage, not scan data")]),
+          Buffer.concat([JPEG_SIG, Buffer.from('garbage, not scan data')]),
         ),
       ],
-      "roto.jpg",
-      { type: "image/jpeg" },
+      'roto.jpg',
+      { type: 'image/jpeg' },
     );
     const res = await POST(requestFor({ file: corrupt }));
     const body = await res.json();
@@ -358,7 +358,7 @@ describe("POST /api/attachments/upload", () => {
     expect(res.status).toBe(422);
     expect(body.success).toBe(false);
     expect(body.error).toBe(
-      "No se pudo procesar la imagen. El archivo puede estar dañado o en un formato no compatible.",
+      'No se pudo procesar la imagen. El archivo puede estar dañado o en un formato no compatible.',
     );
     expect(mocks.uploadFile).not.toHaveBeenCalled();
     expect(mocks.insert).not.toHaveBeenCalled();
