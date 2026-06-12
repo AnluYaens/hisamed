@@ -1,6 +1,15 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-FILIACION.csv
+# Sensitive migration exports / local patient data
+/data-migrations/
+/migraciones/
+/migracion_ehr/
+/Filiacion.csv
+/FILIACION.csv
+/Actos.csv
+/EnfAct.csv
+*.mdb
+*.accdb
 
 # Private operator notes — contains real infrastructure identifiers
 # (server IP, Supabase project ID, admin email). Must stay untracked.
