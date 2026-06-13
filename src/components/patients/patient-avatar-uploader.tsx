@@ -4,10 +4,10 @@ import { useRef, useState, useTransition, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Camera, Loader2 } from 'lucide-react';
 import { updatePatientAvatar } from '@/actions/patient-avatar';
+import { ALLOWED_IMAGE_MIMES } from '@/lib/validators/attachment';
 
-const ALLOWED_AVATAR_MIME = ['image/jpeg', 'image/jpg', 'image/png'];
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
-const ACCEPT_ATTR = ALLOWED_AVATAR_MIME.join(',');
+const ACCEPT_ATTR = Object.keys(ALLOWED_IMAGE_MIMES).join(',');
 
 interface PatientAvatarUploaderProps {
   patientId: string;
@@ -17,7 +17,7 @@ function validateFile(file: File): string | null {
   if (file.size === 0) return 'El archivo está vacío';
   if (file.size > MAX_AVATAR_BYTES) return 'La foto excede el tamaño máximo de 2MB';
   const mime = file.type?.toLowerCase() ?? '';
-  if (!ALLOWED_AVATAR_MIME.includes(mime)) return 'Solo se permiten imágenes JPG o PNG';
+  if (!ALLOWED_IMAGE_MIMES[mime]) return 'Solo se permiten imágenes (JPG, PNG, WebP, HEIC o AVIF)';
   return null;
 }
 

@@ -1,12 +1,14 @@
 import { z } from 'zod';
 
-// Whitelist of file types we accept for upload. MIME type is what the browser
-// sends; extension is what we append to the storage key. NOTE: all image/*
-// inputs are re-encoded to JPEG server-side (see src/lib/images.ts), so for
-// images the extension below only feeds the client <input accept> attribute
-// and display-name fallbacks — the stored object is always a .jpg.
-export const ALLOWED_ATTACHMENT_MIME: Record<string, string> = {
-  'application/pdf': 'pdf',
+// Single source of truth for the image MIME types we accept across every
+// upload surface (patient/partner avatars AND attachments). MIME type is what
+// the browser sends; the value is the extension we append to the storage key.
+// NOTE: all image/* inputs are re-encoded to JPEG server-side (see
+// src/lib/images.ts), so for images the extension below only feeds the client
+// <input accept> attribute and display-name fallbacks — the stored object is
+// always a .jpg. Add a new image format here once and every uploader (and the
+// server whitelist below) picks it up — no hardcoded arrays in components.
+export const ALLOWED_IMAGE_MIMES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
   'image/png': 'png',
@@ -16,6 +18,13 @@ export const ALLOWED_ATTACHMENT_MIME: Record<string, string> = {
   'image/avif': 'avif',
   'image/heic': 'heic',
   'image/heif': 'heif',
+};
+
+// Whitelist of file types we accept on the attachments path. Builds on the
+// shared image whitelist above and adds documents and ultrasound clips.
+export const ALLOWED_ATTACHMENT_MIME: Record<string, string> = {
+  'application/pdf': 'pdf',
+  ...ALLOWED_IMAGE_MIMES,
   // Ultrasound clips. The browser usually labels MP4 as video/mp4 and MOV
   // (QuickTime, what iPhones produce) as video/quicktime — both are allowed
   // so a doctor can drop a clip straight from a phone or a desktop export.
